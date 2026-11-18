@@ -1,0 +1,23 @@
+[Unit]
+Description=Polymarket BTC 5m paper-trading collector (paper-snipe)
+After=network.target
+Wants=network.target
+StartLimitIntervalSec=600
+StartLimitBurst=20
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/paper-snipe.env
+WorkingDirectory=/home/hatch/workspace/polymarket-paper
+ExecStart=/usr/bin/python3 /home/hatch/workspace/polymarket-paper/snipe_paper.py --interval 2
+Restart=always
+RestartSec=10
+TimeoutStopSec=20
+KillMode=control-group
+StandardOutput=append:/home/hatch/workspace/polymarket-paper/service.log
+StandardError=append:/home/hatch/workspace/polymarket-paper/service.log
+MemoryMax=512M
+CPUQuota=50%
+
+[Install]
+WantedBy=multi-user.target

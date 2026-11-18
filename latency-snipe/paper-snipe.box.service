@@ -1,0 +1,17 @@
+[Unit]
+Description=Polymarket BTC 5m paper-trading collector (v0.3)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/workspace/polymarket-paper
+EnvironmentFile=/etc/paper-snipe.env
+ExecStart=/usr/bin/python3 /workspace/polymarket-paper/snipe_paper.py --interval 2
+Restart=always
+RestartSec=10
+StandardOutput=append:/workspace/polymarket-paper/service.log
+StandardError=append:/workspace/polymarket-paper/service.log
+
+[Install]
+WantedBy=multi-user.target

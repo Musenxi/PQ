@@ -1,0 +1,26 @@
+{
+ "summary": {
+  "windows": 224,
+  "wins": 173,
+  "losses": 51,
+  "pairs": 167,
+  "skips": 13,
+  "pnl": 19.9457187162078,
+  "trades": 391
+ },
+ "last_tick": {
+  "ts": "2026-11-18T12:38:27.281380+00:00",
+  "slug": "btc-updown-5m-1795005300",
+  "spot": 64127.27,
+  "s_est": 64044.6,
+  "open": 64138.815626710275,
+  "tau": 94,
+  "jump20": -31.7,
+  "fair_up": 0.041,
+  "up_ask": 0.02,
+  "down_ask": 0.99,
+  "action": "hold"
+ },
+ "open_positions": {},
+ "updated": "2026-11-18T12:38:27.281380+00:00"
+}

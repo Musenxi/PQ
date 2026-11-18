@@ -1,0 +1,17 @@
+[Unit]
+Description=Polymarket BTC 5m paper snipe collector (v0.5, VPS, Tokyo feed)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/polymarket-paper
+EnvironmentFile=-/etc/paper-snipe.env
+ExecStart=/usr/bin/python3 /root/polymarket-paper/snipe_paper.py --interval 2 --feed <FEED_ENDPOINTS>
+Restart=always
+RestartSec=5
+StandardOutput=append:/root/polymarket-paper/service.log
+StandardError=append:/root/polymarket-paper/service.log
+
+[Install]
+WantedBy=multi-user.target

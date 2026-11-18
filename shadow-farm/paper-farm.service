@@ -1,0 +1,17 @@
+[Unit]
+Description=Polymarket BTC 5m shadow-account farm (60 paper accounts, VPS, Tokyo feed)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/polymarket-farm
+EnvironmentFile=-/etc/paper-snipe.env
+ExecStart=/usr/bin/python3 /root/polymarket-farm/farm.py --interval 2 --feed <FEED_ENDPOINTS>
+Restart=always
+RestartSec=5
+StandardOutput=append:/root/polymarket-farm/service.log
+StandardError=append:/root/polymarket-farm/service.log
+
+[Install]
+WantedBy=multi-user.target

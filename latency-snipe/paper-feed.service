@@ -1,0 +1,17 @@
+[Unit]
+Description=Binance price feed relay (Tokyo node for paper-snipe v0.5)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/polymarket-paper
+EnvironmentFile=-/etc/paper-feed.env
+ExecStart=/usr/bin/python3 /root/polymarket-paper/binance_feed.py --port 8765
+Restart=always
+RestartSec=5
+StandardOutput=append:/root/polymarket-paper/feed.log
+StandardError=append:/root/polymarket-paper/feed.log
+
+[Install]
+WantedBy=multi-user.target
