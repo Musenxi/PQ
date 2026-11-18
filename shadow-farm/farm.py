@@ -170,6 +170,20 @@ def build_configs():
                 cfgs.append({"id": f"snipe-{n:02d}", "family": "SNIPE", "gap": gap,
                              "pair_max": pair_max, "exit_after": exit_after,
                              "tau_min": 60, "band": (0.15, 0.92)})
+    # OPENFADE (added 2026-11-19, post-hoc hypothesis from the audit): the
+    # v1 basis bug accidentally faded the opening move and profited in a
+    # range regime. As an explicit strategy: measure the TRUE opening move
+    # (spot minus corrected basis, vs the Chainlink open) and, in the first
+    # seconds, buy the side the market just marked down. Same revised read
+    # criteria as every family; its clock starts at deployment.
+    n = 0
+    for thr in (30.0, 50.0, 70.0):
+        for entry_end in (30, 60):
+            for band in ((0.15, 0.45), (0.25, 0.48)):
+                n += 1
+                cfgs.append({"id": f"openfade-{n:02d}", "family": "OPENFADE",
+                             "thr": thr, "entry_start": 8, "entry_end": entry_end,
+                             "band": band})
     return cfgs
 
 
@@ -607,6 +621,18 @@ def account_tick(a, win, ctx):
         side = best_gap[1]
         extra = {"gap": round(best_gap[0], 3), "fair": round(ctx["fairs"][side], 3),
                  "basis": round(ctx["basis"], 1)}
+    elif fam == "OPENFADE":
+        if ctx.get("basis") is None or win.open_price is None:
+            return
+        age = ctx["now"] - win.start
+        if not (cfg["entry_start"] <= age <= cfg["entry_end"]):
+            return
+        move = (ctx["spot"] - ctx["basis"]) - win.open_price
+        if abs(move) < cfg["thr"]:
+            return
+        side = "Down" if move > 0 else "Up"  # fade the opening move
+        extra = {"move_open": round(move, 1), "thr": cfg["thr"],
+                 "basis": round(ctx["basis"], 1)}
     elif fam == "ACVR":
         if ctx["rho"] is None or ctx["ac_dir"] is None:
             return
@@ -900,7 +926,7 @@ def main():
                 last_summary = now
                 ranked = sorted(accounts, key=lambda a: -a.pnl)
                 alive = sum(1 for a in accounts if a.alive)
-                print(f"[summary] alive={alive}/60 top: " +
+                print(f"[summary] alive={alive}/{len(accounts)} top: " +
                       ", ".join(f"{a.id} {a.pnl:+.1f}" for a in ranked[:5]) +
                       " | bottom: " +
                       ", ".join(f"{a.id} {a.pnl:+.1f}" for a in ranked[-5:]), flush=True)
