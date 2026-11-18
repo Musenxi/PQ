@@ -2,3 +2,4 @@ pq_export.tgz
 parts/
 fetch_parts.sh
 fetch_parts.log
+staging/
