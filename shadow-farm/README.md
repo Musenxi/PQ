@@ -10,7 +10,7 @@
 - **SNIPE**：主策略规则（缺口 0.06/0.08/0.10 × 配对上限 0.95/0.97 × 退出 0/60s）
 
 - `farm.py` — 农场本体（**v2**，2026-11-19）；`paper-farm.service` — 部署单元（地址已脱敏）。
-- `results/` — **run1（v1）的封存数据**：`trades.jsonl` / `settlements.jsonl`（含 account 字段）、`accounts.json`（参数登记）、`state.json`（快照）。run1 的 FAIR 结果已被证明是 basis 实现缺陷的产物（见 `docs/audit-2026-11-19.md`），仅作审计留档，不再作为策略证据。
+- `results/` — **run1（v1）的完整封存数据**（2026-11-18 16:16 → 2026-11-19 00:47 JST，共 4,383 笔成交、3,537 条结算）：`trades.jsonl` / `settlements.jsonl`（含 account 字段）、`accounts.json`（参数登记）、`state.json`（关账快照）。run1 的 FAIR 结果已被证明是 basis 实现缺陷的产物（见 `docs/audit-2026-11-19.md`），仅作审计留档，不再作为策略证据。
 
 **v2 变更（2026-11-19，审计后）**：basis 改为只用开盘前数据估计（开盘前 15 秒现货均价 − Chainlink 开盘价，跨窗口平均），FAIR/SNIPE 开盘头 15 秒禁止入场；成交改为「决策 tick 入队、下一 tick 按盘口深度逐档 VWAP 成交」，退出须 bid 深度足够；结算队列消除队首阻塞；重启恢复 entry_ts；胜负定义改为 pnl > 0。农场已以 v2 从头重启统计（run2）。
 
