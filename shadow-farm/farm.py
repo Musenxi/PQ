@@ -227,8 +227,11 @@ class Window:
             {"symbol": "BTC", "variant": "fiveminute", "eventStartTime": self.start}))
         if cp.get("openPrice"):
             self.open_price = float(cp["openPrice"])
-        self.loaded = True
-        return True
+        # a window counts as loaded only once its open price exists: at the
+        # rollover instant the price API can briefly answer without one,
+        # and marking loaded then would dead-end the whole window
+        self.loaded = self.open_price is not None
+        return self.loaded
 
     def settlement(self):
         cp = http_json(f"{PM_WEB}/api/crypto/crypto-price?" + urllib.parse.urlencode(
