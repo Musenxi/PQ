@@ -9,7 +9,9 @@
 - **ACVR**：rho 阈值 0.02/0.05 × 动量/反转/双分支 × 两档 tau 区间
 - **SNIPE**：主策略规则（缺口 0.06/0.08/0.10 × 配对上限 0.95/0.97 × 退出 0/60s）
 
-- `farm.py` — 农场本体；`paper-farm.service` — 部署单元（地址已脱敏）。
-- `results/` — `trades.jsonl` / `settlements.jsonl`（含 account 字段）、`accounts.json`（参数登记）、`state.json`（快照）。
+- `farm.py` — 农场本体（**v2**，2026-11-19）；`paper-farm.service` — 部署单元（地址已脱敏）。
+- `results/` — **run1（v1）的封存数据**：`trades.jsonl` / `settlements.jsonl`（含 account 字段）、`accounts.json`（参数登记）、`state.json`（快照）。run1 的 FAIR 结果已被证明是 basis 实现缺陷的产物（见 `docs/audit-2026-11-19.md`），仅作审计留档，不再作为策略证据。
 
-预注册判读标准：运行 ≥1 周后才评判；60 个账户的榜首默认是运气——看**家族级聚集**（一个家族多数账户为正，胜过单个明星账户），单个账户的主张必须过 Multiple-comparison 门槛。
+**v2 变更（2026-11-19，审计后）**：basis 改为只用开盘前数据估计（开盘前 15 秒现货均价 − Chainlink 开盘价，跨窗口平均），FAIR/SNIPE 开盘头 15 秒禁止入场；成交改为「决策 tick 入队、下一 tick 按盘口深度逐档 VWAP 成交」，退出须 bid 深度足够；结算队列消除队首阻塞；重启恢复 entry_ts；胜负定义改为 pnl > 0。农场已以 v2 从头重启统计（run2）。
+
+**判读标准（2026-11-19 修订，取代原「家族级聚集」表述）**：原标准把同家族账户数当作独立证据，经去重核验不成立（FAIR 774 笔开仓只有 76 个独立决定）。修订为：以「家族 × 窗口」汇总收益为样本做 block bootstrap 置信区间；按上涨 / 下跌 / 震荡行情分层；样本须覆盖三种行情，一周（约 2,000 窗口）只是最低限度；存活数与正账户数不再作为证据。

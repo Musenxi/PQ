@@ -68,6 +68,48 @@ def best_levels(book):
     return best_bid, best_ask
 
 
+def sorted_levels(book):
+    bids = sorted(((float(b["price"]), float(b["size"])) for b in book.get("bids", [])),
+                  key=lambda x: -x[0])
+    asks = sorted(((float(a["price"]), float(a["size"])) for a in book.get("asks", [])),
+                  key=lambda x: x[0])
+    return bids, asks
+
+
+def walk_asks(levels, want_shares):
+    """Fill want_shares walking ask levels -> (shares, cost, vwap, n_levels);
+    None when visible depth covers < 99% of the order."""
+    got = cost = 0.0
+    n = 0
+    for p, s in levels:
+        if got >= want_shares:
+            break
+        take = min(s, want_shares - got)
+        got += take
+        cost += take * p
+        n += 1
+    if got < want_shares * 0.99:
+        return None
+    return got, cost, cost / got if got else 0.0, n
+
+
+def walk_bids(levels, have_shares):
+    """Sell have_shares walking bid levels -> (proceeds, vwap, n_levels);
+    None when visible depth covers < 99% of the position."""
+    sold = proceeds = 0.0
+    n = 0
+    for p, s in levels:
+        if sold >= have_shares:
+            break
+        take = min(s, have_shares - sold)
+        sold += take
+        proceeds += take * p
+        n += 1
+    if sold < have_shares * 0.99:
+        return None
+    return proceeds, proceeds / sold if sold else 0.0, n
+
+
 def append_jsonl(name, row):
     with open(os.path.join(DATA, name), "a") as f:
         f.write(json.dumps(row) + "\n")
@@ -79,6 +121,10 @@ def read_jsonl(name):
         return []
     with open(p) as f:
         return [json.loads(l) for l in f if l.strip()]
+
+
+FARM_VERSION = 2
+ENTRY_DELAY_S = 15  # fair-anchored families may not enter in a window's first seconds
 
 
 # ---------------------------------------------------------------- accounts
@@ -135,6 +181,7 @@ class Account:
         self.pos = {}            # side -> {shares, cost, fees, price}
         self.entered = False     # leg-1 done for the live window
         self.entry_ts = None
+        self.order = None        # queued order (v2 execution model)
         self.exited = False
         self.trades = 0
         self.settled = 0
@@ -162,6 +209,7 @@ class Window:
         self.open_price = None
         self.fee_rate = 0.07
         self.basis = None
+        self.basis_sampled = False
         self.loaded = False
 
     def load(self):
@@ -323,7 +371,7 @@ def recover(accounts):
         settled_keys.add((a.id, row["slug"]))
         a.settled += 1
         a.pnl += float(row.get("pnl", 0))
-        if float(row.get("pnl", 0)) >= 0:
+        if float(row.get("pnl", 0)) > 0:
             a.wins += 1
     open_pos = {}
     trades = read_jsonl("trades.jsonl")
@@ -349,7 +397,7 @@ def recover(accounts):
                           "settled_at": datetime.now(timezone.utc).isoformat()})
             a.settled += 1
             a.pnl += pnl
-            if pnl >= 0:
+            if pnl > 0:
                 a.wins += 1
             settled_keys.add((aid, slug))
             print(f"[recover] {aid} {slug} rebuilt exit pnl={pnl:+.2f}", flush=True)
@@ -361,8 +409,15 @@ def recover(accounts):
                                   "fees": float(t["fees"]), "price": float(t["price"])}
         if not pos:
             continue
+        ets = None
+        leg1 = [t for t in rows if t.get("leg") == 1]
+        if leg1:
+            try:
+                ets = datetime.fromisoformat(leg1[0]["ts"]).timestamp()
+            except Exception:
+                ets = None
         if start + 300 > now:
-            restored[aid] = (slug, pos)  # window still live; hand back below
+            restored[aid] = (slug, pos, ets)  # window still live; hand back below
         else:
             w = Window(start)
             try:
@@ -380,12 +435,12 @@ def recover(accounts):
                               "settled_at": datetime.now(timezone.utc).isoformat()})
                 a.settled += 1
                 a.pnl += pnl
-                if pnl >= 0:
+                if pnl > 0:
                     a.wins += 1
                 settled_keys.add((aid, slug))
                 print(f"[recover] {aid} {slug} settled pnl={pnl:+.2f}", flush=True)
             else:
-                restored[aid] = (slug, pos)  # settle later via pending queue
+                restored[aid] = (slug, pos, ets)  # settle later via pending queue
     for a in accounts:
         open_cost = 0.0
         for t in trades:
@@ -397,31 +452,114 @@ def recover(accounts):
 
 
 # ------------------------------------------------------------------- engine
-def try_buy(a, win, side, price, size_avail, leg, ctx, shares_fixed=None, extra=None):
-    shares = shares_fixed if shares_fixed else STAKE / price
-    if size_avail < shares:
+def queue_order(a, kind, side, ctx, extra=None, shares_fixed=None):
+    """Queue an order on the decision tick; it fills on a LATER tick against
+    that tick's book (one-tick execution delay, v2 execution model)."""
+    if a.order is not None:
         return False
-    cost = shares * price
-    fees = fee_for(shares, price, win.fee_rate)
+    a.order = {"kind": kind, "side": side, "slug": ctx["slug"],
+               "queued_at": ctx["now"], "extra": extra or {},
+               "shares_fixed": shares_fixed}
+    if kind == "buy1":
+        a.entered = True
+    return True
+
+
+def execute_buy(a, win, side, leg, ctx, order):
+    """Fill a queued buy walking the current ask depth at VWAP."""
+    levels = ctx["levels"][side]["asks"]
+    if not levels:
+        return False
+    want = order["shares_fixed"] if order["shares_fixed"] else STAKE / levels[0][0]
+    fill = walk_asks(levels, want)
+    if fill is None:
+        return False
+    shares, cost, vwap, nlev = fill
+    band = a.cfg.get("band")
+    if band and not (band[0] <= vwap <= band[1]):
+        return False
+    if leg == 2:
+        held = next(iter(a.pos))
+        pair_cost = a.pos[held]["price"] + vwap + fee_for(1, vwap, win.fee_rate)
+        if pair_cost >= a.cfg["pair_max"]:
+            return False
+    fees = fee_for(shares, vwap, win.fee_rate)
     if a.cash < cost + fees:
         return False
     a.cash -= cost + fees
-    a.pos[side] = {"shares": shares, "cost": cost, "fees": fees, "price": price}
+    a.pos[side] = {"shares": shares, "cost": cost, "fees": fees, "price": vwap}
     a.trades += 1
     if leg == 1:
-        a.entered = True
         a.entry_ts = ctx["now"]
     row = {"account": a.id, "family": a.cfg["family"],
            "ts": datetime.now(timezone.utc).isoformat(), "slug": win.slug,
-           "leg": leg, "side": side, "price": price,
+           "leg": leg, "side": side, "price": round(vwap, 4),
            "shares": round(shares, 3), "cost": round(cost, 4),
-           "fees": round(fees, 4)}
-    if extra:
-        row.update(extra)
+           "fees": round(fees, 4),
+           "fill_delay_s": round(ctx["now"] - order["queued_at"], 1),
+           "levels": nlev}
+    row.update(order["extra"])
     append_jsonl("trades.jsonl", row)
-    print(f"[trade] {a.id} {'BUY' if leg == 1 else 'PAIR'} {side} @ {price:.3f} "
+    print(f"[trade] {a.id} {'BUY' if leg == 1 else 'PAIR'} {side} @ {vwap:.3f} "
           f"cash={a.cash:.2f} {win.slug}", flush=True)
     return True
+
+
+def execute_exit(a, win, ctx, order):
+    """Fill a queued exit walking the current bid depth at VWAP; if the bid
+    side cannot absorb the position, stay in (retried on later ticks)."""
+    held = order["side"]
+    if held not in a.pos:
+        return
+    p = a.pos[held]
+    fill = walk_bids(ctx["levels"][held]["bids"], p["shares"])
+    if fill is None:
+        return
+    proceeds, vwap, nlev = fill
+    sfee = fee_for(p["shares"], vwap, win.fee_rate)
+    pnl = proceeds - sfee - p["cost"] - p["fees"]
+    a.cash += proceeds - sfee
+    append_jsonl("trades.jsonl",
+                 {"account": a.id, "family": "SNIPE",
+                  "ts": datetime.now(timezone.utc).isoformat(),
+                  "slug": win.slug, "leg": "exit", "side": held,
+                  "price": round(vwap, 4), "shares": round(p["shares"], 3),
+                  "proceeds": round(proceeds, 4), "fees": round(sfee, 4),
+                  "levels": nlev})
+    a.trades += 1
+    a.settled += 1
+    a.pnl += pnl
+    if pnl > 0:
+        a.wins += 1
+    append_jsonl("settlements.jsonl",
+                 {"account": a.id, "slug": win.slug, "winner": None,
+                  "exited": True, "exit_price": round(vwap, 4), "pnl": round(pnl, 4),
+                  "cash_after": round(a.cash, 2),
+                  "settled_at": datetime.now(timezone.utc).isoformat()})
+    print(f"[trade] {a.id} EXIT {held} @ {vwap:.3f} pnl={pnl:+.2f} {win.slug}",
+          flush=True)
+    a.pos = {}
+    a.exited = True
+
+
+def process_order(a, win, ctx):
+    o = a.order
+    if o is None:
+        return
+    a.order = None
+    if o["slug"] != win.slug:
+        if o["kind"] == "buy1":
+            a.entered = False
+        return
+    if o["kind"] == "exit":
+        execute_exit(a, win, ctx, o)
+    elif o["kind"] == "buy1":
+        if not execute_buy(a, win, o["side"], 1, ctx, o):
+            a.entered = False  # unfilled/cancelled; may re-decide later
+    else:
+        execute_buy(a, win, o["side"], 2, ctx, o)
+
+
 
 
 def account_tick(a, win, ctx):
@@ -429,6 +567,8 @@ def account_tick(a, win, ctx):
     fam = cfg["family"]
     tau = ctx["tau"]
     books = ctx["books"]
+    if a.order is not None:
+        process_order(a, win, ctx)
     if fam == "SNIPE":
         snipe_tick(a, win, ctx)
         return
@@ -447,6 +587,8 @@ def account_tick(a, win, ctx):
             side = "Down" if side == "Up" else "Up"
         extra = {"move": round(mv, 1), "lookback": cfg["lookback"]}
     elif fam == "FAIR":
+        if ctx.get("basis") is None or ctx["now"] - win.start < ENTRY_DELAY_S:
+            return
         if tau < cfg["tau_min"]:
             return
         best_gap = None
@@ -460,7 +602,8 @@ def account_tick(a, win, ctx):
         if not best_gap or best_gap[0] < cfg["gap"]:
             return
         side = best_gap[1]
-        extra = {"gap": round(best_gap[0], 3), "fair": round(ctx["fairs"][side], 3)}
+        extra = {"gap": round(best_gap[0], 3), "fair": round(ctx["fairs"][side], 3),
+                 "basis": round(ctx["basis"], 1)}
     elif fam == "ACVR":
         if ctx["rho"] is None or ctx["ac_dir"] is None:
             return
@@ -480,7 +623,7 @@ def account_tick(a, win, ctx):
     ask, asize = books[side][1]
     if ask is None or not (cfg["band"][0] <= ask <= cfg["band"][1]):
         return
-    try_buy(a, win, side, ask, asize, 1, ctx, extra=extra)
+    queue_order(a, "buy1", side, ctx, extra=extra)
 
 
 def snipe_tick(a, win, ctx):
@@ -495,42 +638,19 @@ def snipe_tick(a, win, ctx):
         if oask:
             pair_cost = a.pos[held]["price"] + oask + fee_for(1, oask, win.fee_rate)
             if pair_cost < cfg["pair_max"] and osize >= a.pos[held]["shares"] * 0.9:
-                try_buy(a, win, other, oask, osize, 2, ctx,
-                        shares_fixed=a.pos[held]["shares"],
-                        extra={"pair_cost": round(pair_cost, 4)})
-    # exit rule: sell an unpaired leg-1 held long enough, at the best bid
+                queue_order(a, "buy2", other, ctx,
+                            shares_fixed=a.pos[held]["shares"],
+                            extra={"pair_cost": round(pair_cost, 4)})
+    # exit rule: queue a sale of an unpaired leg-1 held long enough; the
+    # fill happens on a later tick against walked bid depth (v2)
     if (cfg["exit_after"] > 0 and len(a.pos) == 1 and not a.exited
             and a.entry_ts is not None and now - a.entry_ts >= cfg["exit_after"]):
         held = next(iter(a.pos))
-        bid, _bsize = books[held][0]
-        if bid is not None:
-            p = a.pos[held]
-            proceeds = p["shares"] * bid
-            sfee = fee_for(p["shares"], bid, win.fee_rate)
-            pnl = proceeds - sfee - p["cost"] - p["fees"]
-            a.cash += proceeds - sfee
-            append_jsonl("trades.jsonl",
-                         {"account": a.id, "family": "SNIPE",
-                          "ts": datetime.now(timezone.utc).isoformat(),
-                          "slug": win.slug, "leg": "exit", "side": held,
-                          "price": bid, "shares": round(p["shares"], 3),
-                          "proceeds": round(proceeds, 4), "fees": round(sfee, 4)})
-            a.trades += 1
-            a.settled += 1
-            a.pnl += pnl
-            if pnl >= 0:
-                a.wins += 1
-            append_jsonl("settlements.jsonl",
-                         {"account": a.id, "slug": win.slug, "winner": None,
-                          "exited": True, "exit_price": bid, "pnl": round(pnl, 4),
-                          "cash_after": round(a.cash, 2),
-                          "settled_at": datetime.now(timezone.utc).isoformat()})
-            print(f"[trade] {a.id} EXIT {held} @ {bid:.3f} pnl={pnl:+.2f} {win.slug}",
-                  flush=True)
-            a.pos = {}
-            a.exited = True
+        queue_order(a, "exit", held, ctx)
     # leg 1: fair-gap + jump entry, once per window
     if a.pos or a.entered or not a.alive:
+        return
+    if ctx.get("basis") is None or now - win.start < ENTRY_DELAY_S:
         return
     if ctx["tau"] < cfg["tau_min"]:
         return
@@ -541,8 +661,9 @@ def snipe_tick(a, win, ctx):
         gap = ctx["fairs"][side] - ask
         directional = ctx["jump20"] if side == "Up" else -ctx["jump20"]
         if gap >= cfg["gap"] and directional >= 20.0:
-            if try_buy(a, win, side, ask, asize, 1, ctx,
-                       extra={"gap": round(gap, 3), "jump20": round(ctx["jump20"], 1)}):
+            if queue_order(a, "buy1", side, ctx,
+                           extra={"gap": round(gap, 3), "jump20": round(ctx["jump20"], 1),
+                                  "basis": round(ctx["basis"], 1)}):
                 break
 
 
@@ -579,17 +700,20 @@ def main():
 
     deadline = time.time() + args.minutes * 60 if args.minutes else None
     prices = deque()
+    basis_samples = deque(maxlen=24)  # pre-open Binance-minus-Chainlink samples
     win = None
     pending = []          # {account, slug, start, pos}
     winner_cache = {}     # slug -> (winner, open, close)
+    settle_try = {}       # slug -> last settlement lookup time
     last_summary = time.time()
 
-    for aid, (slug, pos) in restored.items():
+    for aid, (slug, pos, ets) in restored.items():
         a = by_id[aid]
         start = int(slug.rsplit("-", 1)[1])
         if start == int(time.time()) // 300 * 300:
             a.pos = pos
             a.entered = True
+            a.entry_ts = ets
             print(f"[farm] {aid} live position restored in {slug}", flush=True)
         else:
             pending.append({"account": aid, "slug": slug, "start": start, "pos": pos})
@@ -602,21 +726,31 @@ def main():
             now = time.time()
             wstart = int(now) // 300 * 300
 
-            # settle the oldest pending slug when its winner is known
+            # settle ANY pending slug whose winner is known -- no
+            # head-of-line blocking (v1 stalled all later settlements
+            # behind one slow window); lookups throttled per slug
             if pending:
-                slug0 = pending[0]["slug"]
-                if slug0 not in winner_cache:
-                    try:
-                        s = Window(pending[0]["start"]).settlement()
-                        if s:
-                            winner_cache[slug0] = s
-                    except Exception:
-                        pass
-                if slug0 in winner_cache:
-                    winner, op, cl = winner_cache[slug0]
+                slugs = []
+                for p in pending:
+                    if p["slug"] not in slugs:
+                        slugs.append(p["slug"])
+                for slug in slugs:
+                    if slug not in winner_cache:
+                        if now - settle_try.get(slug, 0) < 10:
+                            continue
+                        settle_try[slug] = now
+                        try:
+                            s = Window(int(slug.rsplit("-", 1)[1])).settlement()
+                            if s:
+                                winner_cache[slug] = s
+                        except Exception:
+                            pass
+                    if slug not in winner_cache:
+                        continue
+                    winner, op, cl = winner_cache[slug]
                     rest = []
                     for p in pending:
-                        if p["slug"] != slug0:
+                        if p["slug"] != slug:
                             rest.append(p)
                             continue
                         a = by_id[p["account"]]
@@ -625,16 +759,16 @@ def main():
                         a.cash += payout
                         a.settled += 1
                         a.pnl += pnl
-                        if pnl >= 0:
+                        if pnl > 0:
                             a.wins += 1
                         append_jsonl("settlements.jsonl",
-                                     {"account": a.id, "slug": slug0, "winner": winner,
+                                     {"account": a.id, "slug": slug, "winner": winner,
                                       "open": op, "close": cl,
                                       "paired": len(p["pos"]) == 2,
                                       "pnl": round(pnl, 4),
                                       "cash_after": round(a.cash, 2),
                                       "settled_at": datetime.now(timezone.utc).isoformat()})
-                        print(f"[settle] {a.id} {slug0} winner={winner} "
+                        print(f"[settle] {a.id} {slug} winner={winner} "
                               f"pnl={pnl:+.2f} cash={a.cash:.2f}", flush=True)
                     pending = rest
 
@@ -675,9 +809,20 @@ def main():
                 prices.append((now, spot))
             while prices and prices[0][0] < now - 900:
                 prices.popleft()
-            if win.basis is None and win.open_price:
-                win.basis = spot - win.open_price
-            basis = win.basis or 0.0
+            # basis (Binance minus Chainlink) is estimated ONLY from
+            # pre-open data: this window's sample compares the mean Binance
+            # spot over the 15 s before the window opened with the window's
+            # Chainlink open print, averaged with earlier windows' samples.
+            # v1 set basis from the first in-window tick, which anchored
+            # s_est at the open (fair == 0.5) and hid the opening move.
+            if win.open_price and not win.basis_sampled:
+                pre = [p for t, p in prices if win.start - 15 <= t < win.start - 1]
+                if pre:
+                    basis_samples.append(sum(pre) / len(pre) - win.open_price)
+                    win.basis_sampled = True
+            if basis_samples:
+                win.basis = sum(basis_samples) / len(basis_samples)
+            basis = win.basis if win.basis is not None else 0.0
             s_est = spot - basis
 
             sigma = 0.00012
@@ -706,25 +851,31 @@ def main():
                 fair_up = min(max(norm_cdf(z), 0.001), 0.999)
 
             books = {}
+            levels = {}
             for side in ("Up", "Down"):
                 tok = win.token.get(side)
                 if tok:
                     try:
                         bk = http_json(f"{CLOB}/book?token_id={tok}", timeout=8)
                         books[side] = best_levels(bk)
+                        bl, al = sorted_levels(bk)
+                        levels[side] = {"bids": bl, "asks": al}
                     except Exception:
                         books[side] = ((None, 0.0), (None, 0.0))
+                        levels[side] = {"bids": [], "asks": []}
                 else:
                     books[side] = ((None, 0.0), (None, 0.0))
+                    levels[side] = {"bids": [], "asks": []}
 
             moves = {}
             for L in (5, 10, 20, 30, 60):
                 p0 = price_at(prices, now - L)
                 moves[L] = (spot - p0) if p0 else None
             rho, vr, ac_dir = acvr_stats(prices)
-            ctx = {"now": now, "tau": tau, "spot": spot,
+            ctx = {"now": now, "tau": tau, "spot": spot, "slug": win.slug,
+                   "basis": win.basis,
                    "fairs": {"Up": fair_up, "Down": (1.0 - fair_up) if fair_up is not None else None},
-                   "books": books, "moves": moves,
+                   "books": books, "levels": levels, "moves": moves,
                    "jump20": moves[20] or 0.0,
                    "rho": rho, "vr": vr, "ac_dir": ac_dir}
             if fair_up is not None and win.loaded:
@@ -736,6 +887,8 @@ def main():
 
             with open(os.path.join(DATA, "state.json"), "w") as f:
                 json.dump({"updated": datetime.now(timezone.utc).isoformat(),
+                           "farm_version": FARM_VERSION,
+                           "basis": round(win.basis, 1) if win.basis is not None else None,
                            "window": win.slug,
                            "accounts": {a.id: a.snapshot() for a in accounts},
                            "pending": len(pending)}, f, indent=1)
