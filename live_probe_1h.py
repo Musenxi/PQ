@@ -60,6 +60,16 @@ GAP_MIN = 0.06            # farm1h fair-05: the FAIR 1h family median gap
 TAU_MIN = 300             # farm1h fair-05: entries only while tau >= 300 s
 BAND = (0.15, 0.92)       # farm1h fair-05 band
 ENTRY_DELAY_S = 60        # farm1h: no fair-anchored entries in the first 60 s
+Z_SHRINK = 1.35           # calibration correction: the farm fair is
+                          # systematically overconfident; z / 1.35 improved
+                          # out-of-sample log-loss in both walk-forward
+                          # folds (optimize_fair study, 2026-11-19). The
+                          # ENTRY GATE uses the corrected fair (lizi,
+                          # 2026-11-20 ~00:08 JST); raw fair is still logged.
+MAX_ATTEMPTS_WINDOW = 1   # max submit attempts per window (lizi,
+                          # 2026-11-20 ~00:13 JST; was 3, then 2, now 1)
+                          # 2026-11-20 ~00:09 JST; was 3 for one minute)
+                          # 2026-11-20 ~00:08 JST)
 MAX_WINDOW_USD = 15.00    # per-window spend cap (lizi, 2026-11-19
                           # ~23:11 JST): filled cost summed over the
                           # window may not exceed $15
@@ -100,6 +110,14 @@ def http_json(url, timeout=12):
 
 def norm_cdf(x):
     return 0.5 * (1.0 + math.erf(x / math.sqrt(2.0)))
+
+
+def fair_adj(p):
+    """Overconfidence-corrected fair: shrink the z-score by Z_SHRINK."""
+    from statistics import NormalDist
+    nd = NormalDist()
+    p = min(max(p, 1e-6), 1 - 1e-6)
+    return nd.cdf(nd.inv_cdf(p) / Z_SHRINK)
 
 
 def fee_for(shares, price, rate):
@@ -386,6 +404,7 @@ def main():
     last_hb = 0.0
     last_try = 0.0
     window_spent = 0.0      # filled cost in the current window
+    attempts = 0            # submit attempts in the current window
     pending_settle = {(o.get("key") or o["slug"]): o for o in ledger.open_orders}
 
     while True:
@@ -427,6 +446,12 @@ def main():
                 last_try = 0.0
                 window_spent = sum(o["filled_cost"] for o in ledger.open_orders
                                      if o["slug"] == win.slug)
+                try:
+                    with open(os.path.join(DATA, "orders.jsonl")) as f:
+                        attempts = sum(1 for l in f
+                                       if json.loads(l).get("slug") == win.slug)
+                except Exception:
+                    attempts = 0
                 try:
                     win.load()
                     print(f"[window] {win.slug} open={win.open_price} min_size={win.min_size} tick={win.tick}", flush=True)
@@ -530,10 +555,15 @@ def main():
                 print(f"[hb] {win.slug} basis={win.basis:.1f} spot={spot:.1f} fair_up={fair_up:.3f} "
                       f"gap_up={g_up} gap_dn={g_dn} tau={tau:.0f}", flush=True)
 
-            # FAIR decision (fair-05); entries per window unlimited
-            # (lizi, 2026-11-19 ~23:03 JST) with a 60 s cooldown
+            # FAIR decision (fair-05); entries per window capped at
+            # MAX_ATTEMPTS_WINDOW submits (lizi, 2026-11-20 ~00:08 JST;
+            # the 2026-11-19 unlimited rule stacked one window's cap
+            # onto a single bet within minutes). The gate gap uses the
+            # calibration-corrected fair (Z_SHRINK).
             if now - win.start >= ENTRY_DELAY_S and tau >= TAU_MIN \
-                    and now - last_try >= MIN_RETRY_S:
+                    and now - last_try >= MIN_RETRY_S \
+                    and attempts < MAX_ATTEMPTS_WINDOW:
+                fairs_adj = {s: fair_adj(fairs[s]) for s in fairs}
                 best = None
                 for s in ("Up", "Down"):
                     if s not in books:
@@ -541,14 +571,15 @@ def main():
                     ask = books[s][1][0]
                     if ask is None or not (BAND[0] <= ask <= BAND[1]):
                         continue
-                    gap = fairs[s] - ask
+                    gap = fairs_adj[s] - ask
                     if best is None or gap > best[0]:
                         best = (gap, s, ask)
                 if best and best[0] >= GAP_MIN:
                     gap, side, ask = best
                     sig_row = {"ts": datetime.now(timezone.utc).isoformat(),
                                "slug": win.slug, "side": side,
-                               "fair": round(fairs[side], 3), "gap": round(gap, 3),
+                               "fair": round(fairs[side], 3),
+                               "fair_adj": round(fairs_adj[side], 3), "gap": round(gap, 3),
                                "ask": ask, "book_age_ms": meta[side]["age_ms"],
                                "book_stale": meta[side]["stale"],
                                "basis": round(win.basis, 1),
@@ -574,6 +605,7 @@ def main():
                         sig_row["disposition"] = "dry"
                     else:
                         sig_row["disposition"] = "submit"
+                        attempts += 1
                         orow = dict(sig_row)
                         try:
                             resp, lat_ms = post_fok_buy(client, win.token[side], ask, shares)
