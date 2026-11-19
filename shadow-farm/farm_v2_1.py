@@ -192,6 +192,17 @@ def build_configs():
                 cfgs.append({"id": f"openfade-{n:02d}", "family": "OPENFADE",
                              "thr": thr, "entry_start": 8, "entry_end": entry_end,
                              "band": band})
+    # MVAL: see farm.py build_configs for the design note and the
+    # pre-registered read criteria (added 2026-11-19 at lizi's
+    # instruction; carried here so the v2.1 deploy does not drop it).
+    n = 0
+    for gap in (0.02, 0.03, 0.05):
+        for band in ((0.10, 0.95), (0.20, 0.90)):
+            for max_entries in (4, 8):
+                n += 1
+                cfgs.append({"id": f"mval-{n:02d}", "family": "MVAL",
+                             "gap": gap, "band": band,
+                             "max_entries": max_entries, "tau_min": 20})
     return cfgs
 
 
@@ -202,6 +213,8 @@ class Account:
         self.cash = START_CASH
         self.pos = {}            # side -> {shares, cost, fees, price}
         self.entered = False     # leg-1 done for the live window
+        self.mv_slug = None      # MVAL per-window counters (ephemeral)
+        self.mv_entries = 0
         self.entry_ts = None
         self.order = None        # queued order (v2 execution model)
         self.first_try = None    # ts of first decision attempt for the
@@ -466,8 +479,15 @@ def recover(accounts):
         pos = {}
         for t in rows:
             if t.get("leg") in (1, 2):
-                pos[t["side"]] = {"shares": float(t["shares"]), "cost": float(t["cost"]),
-                                  "fees": float(t["fees"]), "price": float(t["price"])}
+                if t["side"] in pos:
+                    p = pos[t["side"]]
+                    p["shares"] += float(t["shares"])
+                    p["cost"] += float(t["cost"])
+                    p["fees"] += float(t["fees"])
+                    p["price"] = p["cost"] / p["shares"]
+                else:
+                    pos[t["side"]] = {"shares": float(t["shares"]), "cost": float(t["cost"]),
+                                      "fees": float(t["fees"]), "price": float(t["price"])}
         if not pos:
             continue
         ets = None
@@ -553,7 +573,14 @@ def execute_buy(a, win, side, leg, ctx, order):
     if a.cash < cost + fees:
         return False
     a.cash -= cost + fees
-    a.pos[side] = {"shares": shares, "cost": cost, "fees": fees, "price": vwap}
+    if a.cfg["family"] == "MVAL" and side in a.pos:
+        p = a.pos[side]
+        p["shares"] += shares
+        p["cost"] += cost
+        p["fees"] += fees
+        p["price"] = p["cost"] / p["shares"]
+    else:
+        a.pos[side] = {"shares": shares, "cost": cost, "fees": fees, "price": vwap}
     a.trades += 1
     if leg == 1:
         a.entry_ts = ctx["now"]
@@ -644,6 +671,9 @@ def account_tick(a, win, ctx):
     if fam == "SNIPE":
         snipe_tick(a, win, ctx)
         return
+    if fam == "MVAL":
+        mval_tick(a, win, ctx)
+        return
     if a.pos or a.entered or not a.alive or tau < 5:
         return
     side = None
@@ -708,6 +738,39 @@ def account_tick(a, win, ctx):
     if ask is None or not (cfg["band"][0] <= ask <= cfg["band"][1]):
         return
     queue_order(a, "buy1", side, ctx, extra=extra)
+
+
+def mval_tick(a, win, ctx):
+    """Two-sided value accumulation (see farm.py for the full note)."""
+    cfg = a.cfg
+    if a.mv_slug != win.slug:
+        a.mv_slug = win.slug
+        a.mv_entries = 0
+    if not a.alive or a.order is not None:
+        return
+    if a.mv_entries >= cfg["max_entries"]:
+        return
+    if ctx.get("basis") is None or ctx["now"] - win.start < ENTRY_DELAY_S:
+        return
+    if ctx["tau"] < cfg["tau_min"]:
+        return
+    best = None
+    for s in ("Up", "Down"):
+        ask = ctx["books"][s][1][0]
+        if ask is None or not (cfg["band"][0] <= ask <= cfg["band"][1]):
+            continue
+        gap = ctx["fairs"][s] - ask
+        if gap >= cfg["gap"] and (best is None or gap > best[0]):
+            best = (gap, s)
+    if not best:
+        return
+    gap, side = best
+    if queue_order(a, "buy1", side, ctx,
+                   extra={"gap": round(gap, 3),
+                          "fair": round(ctx["fairs"][side], 3),
+                          "basis": round(ctx["basis"], 1),
+                          "mv_entry": a.mv_entries + 1}):
+        a.mv_entries += 1
 
 
 def snipe_tick(a, win, ctx):
