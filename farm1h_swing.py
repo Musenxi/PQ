@@ -93,6 +93,13 @@ def norm_ppf(p):
         (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1)
 
 
+def fair_adj(p):
+    """Overconfidence-corrected fair: shrink the z-score by 1.35."""
+    if p is None:
+        return None
+    return norm_cdf(norm_ppf(p) / 1.35)
+
+
 def fee_for(shares, price, rate=0.07):
     return shares * rate * price * (1.0 - price)
 
@@ -208,6 +215,23 @@ def build_configs():
         cfgs.append({"id": f"swing-{n:02d}", "family": "SWING", "gap": 0.06,
                      "tau_min": 300, "band": (0.15, 0.92),
                      "exit_kind": kind, "exit_par": par, "max_entries": 3})
+    # OSC (added 2026-11-20 at lizi's instruction): a second control
+    # group for the oscillation idea. Differences vs FAIR/SWING: no
+    # entries in the first 600 s (let the window develop; the TWAP
+    # fair is less uncertain later), entries gated on the CORRECTED
+    # gap (fair_adj - ask >= gap_adj), BOTH sides may be held at
+    # different times in the same window (whichever side dips), and
+    # held sides are sold into strength at bid >= fair_adj + exit_par;
+    # unsold remainders settle via Gamma (a two-sided remainder bought
+    # for < $1 in total is a locked pair). Max 4 entries per window.
+    n = 0
+    for gap_adj in (0.08, 0.05):
+        for exit_par in (0.00, 0.03):
+            n += 1
+            cfgs.append({"id": f"osc-{n:02d}", "family": "OSC",
+                         "gap_adj": gap_adj, "exit_par": exit_par,
+                         "band": (0.15, 0.92), "entry_delay": 600,
+                         "tau_min": 120, "max_entries": 4})
     return cfgs
 
 
@@ -472,8 +496,11 @@ def recover(accounts):
         for t in rows:
             if t.get("leg") in (1, 2):
                 lots.append(t)
-            elif t.get("leg") == "exit" and lots:
-                paired.append((lots.pop(0), t))
+            elif t.get("leg") == "exit":
+                same = next((i for i, l in enumerate(lots)
+                             if l["side"] == t["side"]), None)
+                if same is not None:
+                    paired.append((lots.pop(same), t))
         # exits whose settlement row never got written (crash window)
         for i, (b, e) in enumerate(paired):
             if i >= exit_settled.get((aid, slug), 0):
@@ -649,9 +676,9 @@ def execute_exit(a, win, ctx, order):
                   "settled_at": datetime.now(timezone.utc).isoformat()})
     print(f"[trade] {a.id} EXIT {held} @ {vwap:.3f} pnl={pnl:+.2f} {win.slug}",
           flush=True)
-    a.pos = {}
+    a.pos.pop(held, None)
     a.exited = True
-    a.entered = False     # position closed; SWING may re-enter this window
+    a.entered = bool(a.pos)  # SWING/OSC may re-enter once flat
 
 
 def process_order(a, win, ctx):
@@ -686,6 +713,9 @@ def account_tick(a, win, ctx):
         return
     if fam == "SWING":
         swing_tick(a, win, ctx)
+        return
+    if fam == "OSC":
+        osc_tick(a, win, ctx)
         return
     if a.pos or a.entered or not a.alive or tau < 5:
         return
@@ -791,8 +821,7 @@ def swing_tick(a, win, ctx):
         bid = books[held][0][0]
         if bid is not None and tau >= 60 and ctx["fairs"].get(held) is not None:
             if cfg["exit_kind"] == "fair":
-                fair_adj = norm_cdf(norm_ppf(ctx["fairs"][held]) / 1.35)
-                fire = bid >= fair_adj + cfg["exit_par"]
+                fire = bid >= fair_adj(ctx["fairs"][held]) + cfg["exit_par"]
             else:
                 fire = bid >= p["price"] + cfg["exit_par"]
             if fire:
@@ -821,6 +850,56 @@ def swing_tick(a, win, ctx):
     if queue_order(a, "buy1", side, ctx,
                    extra={"gap": round(best_gap[0], 3),
                           "fair": round(ctx["fairs"][side], 3),
+                          "basis": round(ctx["basis"], 1)}):
+        a.entries += 1
+
+
+def osc_tick(a, win, ctx):
+    """OSC: delayed corrected-gap entries on either side; sell into
+    strength per side; remainders settle via Gamma."""
+    cfg = a.cfg
+    tau = ctx["tau"]
+    books = ctx["books"]
+    if not a.alive or tau < 5:
+        return
+    acted = False
+    # exits first: any held side priced above its corrected fair
+    for held in list(a.pos):
+        bid = books[held][0][0]
+        f = fair_adj(ctx["fairs"].get(held))
+        if bid is not None and f is not None and tau >= 60 \
+                and bid >= f + cfg["exit_par"]:
+            if queue_order(a, "exit", held, ctx,
+                           extra={"exit_par": cfg["exit_par"], "bid": bid}):
+                acted = True
+    if acted:
+        return
+    # entries: after the delay, on a corrected gap, side not held
+    if a.entries >= cfg["max_entries"]:
+        return
+    if ctx.get("basis") is None or ctx["now"] - win.start < cfg["entry_delay"]:
+        return
+    if tau < cfg["tau_min"]:
+        return
+    best = None
+    for s in ("Up", "Down"):
+        if s in a.pos:
+            continue
+        ask = books[s][1][0]
+        if ask is None or not (cfg["band"][0] <= ask <= cfg["band"][1]):
+            continue
+        f = fair_adj(ctx["fairs"].get(s))
+        if f is None:
+            continue
+        gap = f - ask
+        if best is None or gap > best[0]:
+            best = (gap, s)
+    if not best or best[0] < cfg["gap_adj"]:
+        return
+    gap, side = best
+    if queue_order(a, "buy1", side, ctx,
+                   extra={"gap_adj": round(gap, 3),
+                          "fair_adj": round(fair_adj(ctx["fairs"][side]), 3),
                           "basis": round(ctx["basis"], 1)}):
         a.entries += 1
 
