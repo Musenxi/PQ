@@ -21,3 +21,5 @@
 
 - `results/`（根目录）：run1（v1 代码）完整归档——trades / settlements / accounts / state。因 basis 缺陷污染已退役为证据，仅作审计复现用。
 - `results/run2/`：v2 运行数据（2026-11-19 09:23 JST 快照，服务仍在运行），含 `farm_report.txt`（按修订判读标准的家族×窗口报告输出）。
+
+**v2.0.1 只记录段（2026-11-19 10:10 JST 起）**：第二轮审计（见 `docs/audit-2026-11-19.md` 附录）后部署。盘口 timestamp/hash/age 全量记录，成交带 `would_reject` 标记（v2.1 过滤会不会拒掉这笔），但**不改变任何成交行为**，为的是把 FAIR 的利润按盘口新鲜度归因；配对腿价格带改回 v1（SNIPE 自此另起一段）；新增 `wait_s`/`attempts`。过滤版 `farm_v2_1.py` 已备好，是否部署按审计文档中预注册的 24 小时规则判定；归因分析工具为 `fair_booksplit.py`。

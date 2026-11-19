@@ -123,7 +123,42 @@ def read_jsonl(name):
         return [json.loads(l) for l in f if l.strip()]
 
 
-FARM_VERSION = 2
+FARM_VERSION = "2.0.1"
+STALE_BOOK_MS = 1000        # v2.1 filter threshold (audit 2026-11-19)
+FUTURE_BOOK_MS = -2000      # or future-dated beyond plausible clock skew
+# v2.0.1 (deployed 2026-11-19, RECORD-ONLY observation build): books carry
+# the CLOB server timestamp/hash; every fill logs book_age_ms (fill tick),
+# dec_book_age_ms (decision tick) and would_reject = whether the v2.1
+# filter would have refused that fill (either book stale by the thresholds
+# above). Behaviour is UNCHANGED for books: nothing is filtered, so the
+# next 24h of run2 data can be split fresh vs would-reject for attribution.
+# state.json carries the all-tick book-age histogram + hash-repeat count,
+# which is what tests whether the timestamp field measures staleness at
+# all. Two behaviour changes DO ride along (both FAIR-irrelevant):
+# execute_buy no longer band-checks leg-2 pair fills (v1 behaviour; the
+# pair_cost gate is the leg-2 control) -- SNIPE data starts a new segment
+# at this deployment -- and trade rows log wait_s/attempts (time from the
+# FIRST decision attempt to fill, not just the last). The filtering build
+# is farm_v2_1.py; whether/when it deploys is pre-registered in
+# docs/audit-2026-11-19.md (24h decision rule).
+
+
+def would_reject_age(age_ms):
+    """Would the v2.1 filter refuse a book of this age?"""
+    return age_ms is None or age_ms > STALE_BOOK_MS or age_ms < FUTURE_BOOK_MS
+
+
+def age_bucket(age_ms):
+    if age_ms is None:
+        return "missing"
+    if age_ms < 0:
+        return "neg"
+    for hi, name in ((100, "0_100"), (250, "100_250"), (500, "250_500"),
+                     (1000, "500_1000"), (2000, "1000_2000"),
+                     (5000, "2000_5000")):
+        if age_ms < hi:
+            return name
+    return "gt5000"
 ENTRY_DELAY_S = 15  # fair-anchored families may not enter in a window's first seconds
 
 
@@ -196,6 +231,8 @@ class Account:
         self.entered = False     # leg-1 done for the live window
         self.entry_ts = None
         self.order = None        # queued order (v2 execution model)
+        self.first_try = None    # ts of first decision attempt for the
+        self.tries = 0           # pending buy; wait_s measures from here
         self.exited = False
         self.trades = 0
         self.settled = 0
@@ -474,9 +511,17 @@ def queue_order(a, kind, side, ctx, extra=None, shares_fixed=None):
     that tick's book (one-tick execution delay, v2 execution model)."""
     if a.order is not None:
         return False
+    dec_meta = (ctx.get("book_meta") or {}).get(side) or {}
     a.order = {"kind": kind, "side": side, "slug": ctx["slug"],
                "queued_at": ctx["now"], "extra": extra or {},
-               "shares_fixed": shares_fixed}
+               "shares_fixed": shares_fixed,
+               "dec_age_ms": dec_meta.get("age_ms"),
+               "dec_hash": dec_meta.get("hash")}
+    if kind in ("buy1", "buy2"):
+        if a.first_try is None:
+            a.first_try = ctx["now"]
+            a.tries = 0
+        a.tries += 1
     if kind == "buy1":
         a.entered = True
     return True
@@ -493,7 +538,7 @@ def execute_buy(a, win, side, leg, ctx, order):
         return False
     shares, cost, vwap, nlev = fill
     band = a.cfg.get("band")
-    if band and not (band[0] <= vwap <= band[1]):
+    if leg == 1 and band and not (band[0] <= vwap <= band[1]):
         return False
     if leg == 2:
         held = next(iter(a.pos))
@@ -508,14 +553,23 @@ def execute_buy(a, win, side, leg, ctx, order):
     a.trades += 1
     if leg == 1:
         a.entry_ts = ctx["now"]
+    meta = (ctx.get("book_meta") or {}).get(side) or {}
     row = {"account": a.id, "family": a.cfg["family"],
            "ts": datetime.now(timezone.utc).isoformat(), "slug": win.slug,
            "leg": leg, "side": side, "price": round(vwap, 4),
            "shares": round(shares, 3), "cost": round(cost, 4),
            "fees": round(fees, 4),
            "fill_delay_s": round(ctx["now"] - order["queued_at"], 1),
+           "wait_s": round(ctx["now"] - a.first_try, 1) if a.first_try else None,
+           "attempts": a.tries,
+           "book_age_ms": meta.get("age_ms"), "book_hash": meta.get("hash"),
+           "dec_book_age_ms": order.get("dec_age_ms"),
+           "would_reject": bool(would_reject_age(meta.get("age_ms"))
+                                or would_reject_age(order.get("dec_age_ms"))),
            "levels": nlev}
     row.update(order["extra"])
+    a.first_try = None
+    a.tries = 0
     append_jsonl("trades.jsonl", row)
     print(f"[trade] {a.id} {'BUY' if leg == 1 else 'PAIR'} {side} @ {vwap:.3f} "
           f"cash={a.cash:.2f} {win.slug}", flush=True)
@@ -536,12 +590,18 @@ def execute_exit(a, win, ctx, order):
     sfee = fee_for(p["shares"], vwap, win.fee_rate)
     pnl = proceeds - sfee - p["cost"] - p["fees"]
     a.cash += proceeds - sfee
+    emeta = (ctx.get("book_meta") or {}).get(held) or {}
     append_jsonl("trades.jsonl",
                  {"account": a.id, "family": "SNIPE",
                   "ts": datetime.now(timezone.utc).isoformat(),
                   "slug": win.slug, "leg": "exit", "side": held,
                   "price": round(vwap, 4), "shares": round(p["shares"], 3),
                   "proceeds": round(proceeds, 4), "fees": round(sfee, 4),
+                  "book_age_ms": emeta.get("age_ms"),
+                  "book_hash": emeta.get("hash"),
+                  "dec_book_age_ms": order.get("dec_age_ms"),
+                  "would_reject": bool(would_reject_age(emeta.get("age_ms"))
+                                       or would_reject_age(order.get("dec_age_ms"))),
                   "levels": nlev})
     a.trades += 1
     a.settled += 1
@@ -735,6 +795,11 @@ def main():
     winner_cache = {}     # slug -> (winner, open, close)
     settle_try = {}       # slug -> last settlement lookup time
     last_summary = time.time()
+    book_polls = 0
+    would_reject_books = 0
+    hash_repeats = 0
+    age_hist = {}
+    prev_hash = {"Up": None, "Down": None}
 
     for aid, (slug, pos, ets) in restored.items():
         a = by_id[aid]
@@ -812,6 +877,8 @@ def main():
                         a.entered = False
                         a.exited = False
                         a.entry_ts = None
+                        a.first_try = None
+                        a.tries = 0
                 win = Window(wstart)
                 try:
                     win.load()
@@ -881,18 +948,42 @@ def main():
 
             books = {}
             levels = {}
+            book_meta = {}
             for side in ("Up", "Down"):
                 tok = win.token.get(side)
                 if tok:
                     try:
                         bk = http_json(f"{CLOB}/book?token_id={tok}", timeout=8)
+                        ts_ms = int(bk.get("timestamp") or 0)
+                        # age at RECEIPT (fresh time.time()), not vs the
+                        # loop-top `now`: request transit otherwise biases
+                        # ages negative by the round-trip time
+                        age_ms = int(time.time() * 1000) - ts_ms if ts_ms else None
+                        book_meta[side] = {"ts": ts_ms, "age_ms": age_ms,
+                                           "hash": bk.get("hash"),
+                                           "stale": would_reject_age(age_ms)}
+                        # record-only: count and histogram every book,
+                        # but USE it exactly as v2 did (no filtering)
+                        book_polls += 1
+                        bkt = age_bucket(age_ms)
+                        age_hist[bkt] = age_hist.get(bkt, 0) + 1
+                        if bk.get("hash") is not None \
+                                and bk.get("hash") == prev_hash[side]:
+                            hash_repeats += 1
+                        prev_hash[side] = bk.get("hash")
+                        if book_meta[side]["stale"]:
+                            would_reject_books += 1
                         books[side] = best_levels(bk)
                         bl, al = sorted_levels(bk)
                         levels[side] = {"bids": bl, "asks": al}
                     except Exception:
+                        book_meta[side] = {"ts": None, "age_ms": None,
+                                           "hash": None, "stale": True}
                         books[side] = ((None, 0.0), (None, 0.0))
                         levels[side] = {"bids": [], "asks": []}
                 else:
+                    book_meta[side] = {"ts": None, "age_ms": None,
+                                       "hash": None, "stale": True}
                     books[side] = ((None, 0.0), (None, 0.0))
                     levels[side] = {"bids": [], "asks": []}
 
@@ -904,7 +995,8 @@ def main():
             ctx = {"now": now, "tau": tau, "spot": spot, "slug": win.slug,
                    "basis": win.basis,
                    "fairs": {"Up": fair_up, "Down": (1.0 - fair_up) if fair_up is not None else None},
-                   "books": books, "levels": levels, "moves": moves,
+                   "books": books, "levels": levels, "book_meta": book_meta,
+                   "moves": moves,
                    "jump20": moves[20] or 0.0,
                    "rho": rho, "vr": vr, "ac_dir": ac_dir}
             if fair_up is not None and win.loaded:
@@ -917,6 +1009,10 @@ def main():
             with open(os.path.join(DATA, "state.json"), "w") as f:
                 json.dump({"updated": datetime.now(timezone.utc).isoformat(),
                            "farm_version": FARM_VERSION,
+                           "book_polls": book_polls,
+                           "would_reject_books": would_reject_books,
+                           "hash_repeats": hash_repeats,
+                           "book_age_hist": age_hist,
                            "basis": round(win.basis, 1) if win.basis is not None else None,
                            "window": win.slug,
                            "accounts": {a.id: a.snapshot() for a in accounts},
