@@ -1,0 +1,14 @@
+{"slug": "btc-updown-5m-1795079700", "side": "Up", "winner": "Up", "filled_shares": 5.065787, "filled_cost": 3.85, "fee_est": 0.0647, "pnl": 1.1511, "settled_at": "2026-11-19T09:21:05.151244+00:00"}
+{"slug": "btc-updown-5m-1795080300", "side": "Up", "winner": "Down", "filled_shares": 7.142858, "filled_cost": 1.5, "fee_est": 0.083, "pnl": -1.583, "settled_at": "2026-11-19T09:31:18.157329+00:00"}
+{"slug": "btc-updown-5m-1795081200", "side": "Up", "winner": "Up", "filled_shares": 5.0, "filled_cost": 1.95, "fee_est": 0.0833, "pnl": 2.9667, "settled_at": "2026-11-19T09:46:11.089033+00:00"}
+{"slug": "btc-updown-5m-1795081800", "side": "Up", "winner": "Up", "filled_shares": 5.3125, "filled_cost": 3.4, "fee_est": 0.0857, "pnl": 1.8268, "settled_at": "2026-11-19T09:56:07.593969+00:00"}
+{"slug": "btc-updown-5m-1795082100", "side": "Down", "winner": "Down", "filled_shares": 5.09091, "filled_cost": 2.8, "fee_est": 0.0882, "pnl": 2.2027, "settled_at": "2026-11-19T10:01:13.891162+00:00"}
+{"slug": "btc-updown-5m-1795082400", "side": "Up", "winner": "Down", "filled_shares": 5.510205, "filled_cost": 2.7, "fee_est": 0.0964, "pnl": -2.7964, "settled_at": "2026-11-19T10:06:12.839681+00:00"}
+{"slug": "btc-updown-5m-1795082700", "side": "Up", "winner": "Up", "filled_shares": 5.0, "filled_cost": 2.95, "fee_est": 0.0847, "pnl": 1.9653, "settled_at": "2026-11-19T10:11:04.624438+00:00"}
+{"slug": "btc-updown-5m-1795083300", "side": "Up", "winner": "Up", "filled_shares": 5.0, "filled_cost": 3.35, "fee_est": 0.0774, "pnl": 1.5726, "settled_at": "2026-11-19T10:21:04.538860+00:00"}
+{"slug": "btc-updown-5m-1795083600", "side": "Up", "winner": "Down", "filled_shares": 5.0, "filled_cost": 3.6, "fee_est": 0.0706, "pnl": -3.6706, "settled_at": "2026-11-19T10:26:13.047216+00:00"}
+{"slug": "btc-updown-5m-1795083900", "side": "Up", "winner": "Down", "filled_shares": 5.089286, "filled_cost": 2.85, "fee_est": 0.0878, "pnl": -2.9378, "settled_at": "2026-11-19T10:31:13.105434+00:00"}
+{"slug": "btc-updown-5m-1795084200", "side": "Up", "winner": "Down", "filled_shares": 5.0, "filled_cost": 3.5, "fee_est": 0.0735, "pnl": -3.5735, "settled_at": "2026-11-19T10:36:09.025228+00:00", "corrected": "gamma official resolution: Down (crypto-price close print disagreed)"}
+{"slug": "btc-updown-5m-1795084800", "side": "Up", "winner": "Up", "filled_shares": 5.263158, "filled_cost": 2.0, "fee_est": 0.0868, "pnl": 3.1764, "settled_at": "2026-11-19T10:46:29.059415+00:00"}
+{"slug": "btc-updown-5m-1795085700", "side": "Down", "winner": "Down", "filled_shares": 5.0, "filled_cost": 3.7, "fee_est": 0.0673, "pnl": 1.2327, "settled_at": "2026-11-19T11:04:03.074808+00:00"}
+{"slug": "btc-updown-5m-1795086300", "side": "Up", "winner": "Down", "filled_shares": 5.0, "filled_cost": 3.2, "fee_est": 0.0806, "pnl": -3.2806, "settled_at": "2026-11-19T11:13:27.216809+00:00", "corrected": "manual settlement after probe stop (gamma official resolution: Down)"}

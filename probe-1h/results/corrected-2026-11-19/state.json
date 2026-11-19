@@ -1,0 +1,128 @@
+{
+ "updated": "2026-11-19T11:10:56.165289+00:00",
+ "farm_version": "1h-0.1",
+ "book_polls": 348,
+ "would_reject_books": 48,
+ "hash_repeats": 0,
+ "book_age_hist": {
+  "1000_2000": 47,
+  "500_1000": 98,
+  "100_250": 53,
+  "250_500": 27,
+  "0_100": 122,
+  "2000_5000": 1
+ },
+ "basis": null,
+ "window": "btc-updown-1h-1795086000",
+ "accounts": {
+  "fair-01": {
+   "cash": 59.56,
+   "pnl": 9.56,
+   "trades": 8,
+   "settled": 8,
+   "wins": 6,
+   "alive": true,
+   "in_pos": false
+  },
+  "fair-02": {
+   "cash": 59.56,
+   "pnl": 9.56,
+   "trades": 8,
+   "settled": 8,
+   "wins": 6,
+   "alive": true,
+   "in_pos": false
+  },
+  "fair-03": {
+   "cash": 59.56,
+   "pnl": 9.56,
+   "trades": 8,
+   "settled": 8,
+   "wins": 6,
+   "alive": true,
+   "in_pos": false
+  },
+  "fair-04": {
+   "cash": 59.56,
+   "pnl": 9.56,
+   "trades": 8,
+   "settled": 8,
+   "wins": 6,
+   "alive": true,
+   "in_pos": false
+  },
+  "fair-05": {
+   "cash": 59.2,
+   "pnl": 9.2,
+   "trades": 8,
+   "settled": 8,
+   "wins": 6,
+   "alive": true,
+   "in_pos": false
+  },
+  "fair-06": {
+   "cash": 59.2,
+   "pnl": 9.2,
+   "trades": 8,
+   "settled": 8,
+   "wins": 6,
+   "alive": true,
+   "in_pos": false
+  },
+  "fair-07": {
+   "cash": 59.2,
+   "pnl": 9.2,
+   "trades": 8,
+   "settled": 8,
+   "wins": 6,
+   "alive": true,
+   "in_pos": false
+  },
+  "fair-08": {
+   "cash": 59.2,
+   "pnl": 9.2,
+   "trades": 8,
+   "settled": 8,
+   "wins": 6,
+   "alive": true,
+   "in_pos": false
+  },
+  "fair-09": {
+   "cash": 48.63,
+   "pnl": -1.37,
+   "trades": 8,
+   "settled": 8,
+   "wins": 5,
+   "alive": true,
+   "in_pos": false
+  },
+  "fair-10": {
+   "cash": 48.63,
+   "pnl": -1.37,
+   "trades": 8,
+   "settled": 8,
+   "wins": 5,
+   "alive": true,
+   "in_pos": false
+  },
+  "fair-11": {
+   "cash": 48.63,
+   "pnl": -1.37,
+   "trades": 8,
+   "settled": 8,
+   "wins": 5,
+   "alive": true,
+   "in_pos": false
+  },
+  "fair-12": {
+   "cash": 48.63,
+   "pnl": -1.37,
+   "trades": 8,
+   "settled": 8,
+   "wins": 5,
+   "alive": true,
+   "in_pos": false
+  }
+ },
+ "pending": 0
+}

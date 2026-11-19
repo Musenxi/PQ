@@ -23,3 +23,5 @@
 - `results/run2/`：v2 运行数据（2026-11-19 09:23 JST 快照，服务仍在运行），含 `farm_report.txt`（按修订判读标准的家族×窗口报告输出）。
 
 **v2.0.1 只记录段（2026-11-19 10:10 JST 起）**：第二轮审计（见 `docs/audit-2026-11-19.md` 附录）后部署。盘口 timestamp/hash/age 全量记录，成交带 `would_reject` 标记（v2.1 过滤会不会拒掉这笔），但**不改变任何成交行为**，为的是把 FAIR 的利润按盘口新鲜度归因；配对腿价格带改回 v1（SNIPE 自此另起一段）；新增 `wait_s`/`attempts`。过滤版 `farm_v2_1.py` 已备好，是否部署按审计文档中预注册的 24 小时规则判定；归因分析工具为 `fair_booksplit.py`。
+
+**结算口径修正（2026-11-19 晚，重要）**：`settlement()` 已改为只认 Gamma 官方结算（outcomePrices + umaResolutionStatus=resolved 守卫），此前用 crypto-price 收盘/开盘符号判卷，与官方 TWAP 结算在 run2 的 227 窗中 27 窗不一致。run2 账本已用 `fix_settlements_gamma.py` 全量修正（Δ 合计 −$4,888.62），修正后数据在 `results/run2-corrected-2026-11-19/`（含修正前 `.bak-gammafix` 原件供对照）；修正后 FAIR 223 窗 −$1,386.36、六家族全负，12 个 FAIR 账户全部停机。全文见 `docs/settlement-grading-bug-2026-11-19.md`。2026-11-20 10:15 JST 的预注册 booksplit 判读在修正后账本上运行。

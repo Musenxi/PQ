@@ -258,12 +258,46 @@ class Window:
         return self.loaded
 
     def settlement(self):
-        cp = http_json(f"{PM_WEB}/api/crypto/crypto-price?" + urllib.parse.urlencode(
-            {"symbol": "BTC", "variant": "fiveminute", "eventStartTime": self.start}))
-        if not cp.get("completed") or cp.get("closePrice") is None:
+        # Winner from the OFFICIAL resolution (Gamma outcomePrices --
+        # what positions actually pay on). The crypto-price close
+        # print is fetched only to record open/close: on near-tie
+        # windows its sign disagreed with the official resolution 22
+        # times in run2's 227 windows (the market settles on a
+        # TWAP-60, the endpoint reports a boundary print), booking
+        # phantom wins/losses farm-wide and in the live probe
+        # (caught by lizi 2026-11-19; run2 ledger corrected post-hoc
+        # against Gamma the same evening). A 0.5/0.5 split resolution
+        # falls back to the crypto-price sign, as before.
+        try:
+            ev = http_json(f"{GAMMA}/events?slug={self.slug}")
+        except Exception:
             return None
-        winner = "Up" if float(cp["closePrice"]) >= float(cp["openPrice"]) else "Down"
-        return winner, float(cp["openPrice"]), float(cp["closePrice"])
+        if not ev:
+            return None
+        m = ev[0]["markets"][0]
+        if not m.get("closed") or not m.get("outcomePrices"):
+            return None
+        # outcomePrices are provisional during the UMA proposal
+        # window; book only once the resolution is final
+        _st = m.get("umaResolutionStatus")
+        if _st and _st != "resolved":
+            return None
+        outs = ast.literal_eval(m["outcomes"])
+        prices = [float(x) for x in ast.literal_eval(m["outcomePrices"])]
+        cp = {}
+        try:
+            cp = http_json(f"{PM_WEB}/api/crypto/crypto-price?" + urllib.parse.urlencode(
+                {"symbol": "BTC", "variant": "fiveminute", "eventStartTime": self.start}))
+        except Exception:
+            pass
+        op = float(cp["openPrice"]) if cp.get("openPrice") is not None else None
+        cl = float(cp["closePrice"]) if cp.get("closePrice") is not None else None
+        if max(prices) >= 0.999 and sum(prices) <= 1.001:
+            return outs[prices.index(max(prices))], op, cl
+        if cp.get("completed") and cp.get("closePrice") is not None:
+            winner = "Up" if float(cp["closePrice"]) >= float(cp["openPrice"]) else "Down"
+            return winner, op, cl
+        return None
 
 
 # --------------------------------------------------------------------- feed

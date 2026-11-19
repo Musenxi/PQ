@@ -1,0 +1,668 @@
+{
+ "updated": "2026-11-19T11:10:56.137939+00:00",
+ "farm_version": "2.0.1",
+ "book_polls": 326,
+ "would_reject_books": 12,
+ "hash_repeats": 0,
+ "book_age_hist": {
+  "500_1000": 100,
+  "0_100": 207,
+  "1000_2000": 11,
+  "2000_5000": 1,
+  "250_500": 2,
+  "100_250": 5
+ },
+ "basis": 71.5,
+ "window": "btc-updown-5m-1795086600",
+ "accounts": {
+  "mom-01": {
+   "cash": -16.4,
+   "pnl": -66.4,
+   "trades": 182,
+   "settled": 182,
+   "wins": 107,
+   "alive": false,
+   "in_pos": false
+  },
+  "mom-02": {
+   "cash": 94.51,
+   "pnl": 44.51,
+   "trades": 138,
+   "settled": 138,
+   "wins": 92,
+   "alive": true,
+   "in_pos": false
+  },
+  "mom-03": {
+   "cash": 14.56,
+   "pnl": -35.44,
+   "trades": 61,
+   "settled": 61,
+   "wins": 34,
+   "alive": true,
+   "in_pos": false
+  },
+  "mom-04": {
+   "cash": 13.59,
+   "pnl": -36.41,
+   "trades": 43,
+   "settled": 43,
+   "wins": 23,
+   "alive": true,
+   "in_pos": false
+  },
+  "mom-05": {
+   "cash": -36.52,
+   "pnl": -86.52,
+   "trades": 162,
+   "settled": 162,
+   "wins": 95,
+   "alive": false,
+   "in_pos": false
+  },
+  "mom-06": {
+   "cash": 8.1,
+   "pnl": -36.81,
+   "trades": 173,
+   "settled": 172,
+   "wins": 105,
+   "alive": true,
+   "in_pos": false
+  },
+  "mom-07": {
+   "cash": 27.71,
+   "pnl": -22.29,
+   "trades": 124,
+   "settled": 124,
+   "wins": 79,
+   "alive": true,
+   "in_pos": false
+  },
+  "mom-08": {
+   "cash": -10.92,
+   "pnl": -60.92,
+   "trades": 89,
+   "settled": 89,
+   "wins": 51,
+   "alive": false,
+   "in_pos": false
+  },
+  "mom-09": {
+   "cash": 30.29,
+   "pnl": -14.62,
+   "trades": 221,
+   "settled": 220,
+   "wins": 154,
+   "alive": true,
+   "in_pos": false
+  },
+  "mom-10": {
+   "cash": 36.98,
+   "pnl": -7.94,
+   "trades": 195,
+   "settled": 194,
+   "wins": 129,
+   "alive": true,
+   "in_pos": false
+  },
+  "mom-11": {
+   "cash": -36.25,
+   "pnl": -86.25,
+   "trades": 178,
+   "settled": 178,
+   "wins": 121,
+   "alive": false,
+   "in_pos": false
+  },
+  "mom-12": {
+   "cash": -19.59,
+   "pnl": -69.59,
+   "trades": 141,
+   "settled": 141,
+   "wins": 88,
+   "alive": false,
+   "in_pos": false
+  },
+  "rev-01": {
+   "cash": -5.16,
+   "pnl": -55.16,
+   "trades": 173,
+   "settled": 173,
+   "wins": 85,
+   "alive": false,
+   "in_pos": false
+  },
+  "rev-02": {
+   "cash": 30.37,
+   "pnl": -19.63,
+   "trades": 29,
+   "settled": 29,
+   "wins": 18,
+   "alive": true,
+   "in_pos": false
+  },
+  "rev-03": {
+   "cash": 98.17,
+   "pnl": 48.17,
+   "trades": 54,
+   "settled": 54,
+   "wins": 30,
+   "alive": true,
+   "in_pos": false
+  },
+  "rev-04": {
+   "cash": 34.65,
+   "pnl": -15.35,
+   "trades": 25,
+   "settled": 25,
+   "wins": 13,
+   "alive": true,
+   "in_pos": false
+  },
+  "rev-05": {
+   "cash": 29.57,
+   "pnl": -15.16,
+   "trades": 84,
+   "settled": 83,
+   "wins": 36,
+   "alive": true,
+   "in_pos": false
+  },
+  "rev-06": {
+   "cash": 46.1,
+   "pnl": -3.9,
+   "trades": 51,
+   "settled": 51,
+   "wins": 30,
+   "alive": true,
+   "in_pos": false
+  },
+  "rev-07": {
+   "cash": 108.04,
+   "pnl": 58.04,
+   "trades": 114,
+   "settled": 114,
+   "wins": 56,
+   "alive": true,
+   "in_pos": false
+  },
+  "rev-08": {
+   "cash": 89.58,
+   "pnl": 39.58,
+   "trades": 74,
+   "settled": 74,
+   "wins": 45,
+   "alive": true,
+   "in_pos": false
+  },
+  "rev-09": {
+   "cash": -40.83,
+   "pnl": -90.83,
+   "trades": 209,
+   "settled": 209,
+   "wins": 72,
+   "alive": false,
+   "in_pos": false
+  },
+  "rev-10": {
+   "cash": 15.4,
+   "pnl": -34.6,
+   "trades": 19,
+   "settled": 19,
+   "wins": 6,
+   "alive": true,
+   "in_pos": false
+  },
+  "rev-11": {
+   "cash": 42.05,
+   "pnl": -2.68,
+   "trades": 104,
+   "settled": 103,
+   "wins": 40,
+   "alive": true,
+   "in_pos": false
+  },
+  "rev-12": {
+   "cash": 12.26,
+   "pnl": -37.74,
+   "trades": 12,
+   "settled": 12,
+   "wins": 3,
+   "alive": true,
+   "in_pos": false
+  },
+  "fair-01": {
+   "cash": -57.4,
+   "pnl": -107.4,
+   "trades": 225,
+   "settled": 225,
+   "wins": 120,
+   "alive": false,
+   "in_pos": false
+  },
+  "fair-02": {
+   "cash": -44.92,
+   "pnl": -94.92,
+   "trades": 211,
+   "settled": 211,
+   "wins": 112,
+   "alive": false,
+   "in_pos": false
+  },
+  "fair-03": {
+   "cash": -57.4,
+   "pnl": -107.4,
+   "trades": 225,
+   "settled": 225,
+   "wins": 120,
+   "alive": false,
+   "in_pos": false
+  },
+  "fair-04": {
+   "cash": -44.92,
+   "pnl": -94.92,
+   "trades": 211,
+   "settled": 211,
+   "wins": 112,
+   "alive": false,
+   "in_pos": false
+  },
+  "fair-05": {
+   "cash": -92.99,
+   "pnl": -142.99,
+   "trades": 222,
+   "settled": 222,
+   "wins": 117,
+   "alive": false,
+   "in_pos": false
+  },
+  "fair-06": {
+   "cash": -73.2,
+   "pnl": -123.2,
+   "trades": 208,
+   "settled": 208,
+   "wins": 108,
+   "alive": false,
+   "in_pos": false
+  },
+  "fair-07": {
+   "cash": -92.99,
+   "pnl": -142.99,
+   "trades": 222,
+   "settled": 222,
+   "wins": 117,
+   "alive": false,
+   "in_pos": false
+  },
+  "fair-08": {
+   "cash": -73.2,
+   "pnl": -123.2,
+   "trades": 208,
+   "settled": 208,
+   "wins": 108,
+   "alive": false,
+   "in_pos": false
+  },
+  "fair-09": {
+   "cash": -95.22,
+   "pnl": -145.22,
+   "trades": 210,
+   "settled": 210,
+   "wins": 107,
+   "alive": false,
+   "in_pos": false
+  },
+  "fair-10": {
+   "cash": -55.53,
+   "pnl": -105.53,
+   "trades": 197,
+   "settled": 197,
+   "wins": 101,
+   "alive": false,
+   "in_pos": false
+  },
+  "fair-11": {
+   "cash": -95.22,
+   "pnl": -145.22,
+   "trades": 210,
+   "settled": 210,
+   "wins": 107,
+   "alive": false,
+   "in_pos": false
+  },
+  "fair-12": {
+   "cash": -55.53,
+   "pnl": -105.53,
+   "trades": 197,
+   "settled": 197,
+   "wins": 101,
+   "alive": false,
+   "in_pos": false
+  },
+  "acvr-01": {
+   "cash": 51.59,
+   "pnl": 1.59,
+   "trades": 139,
+   "settled": 139,
+   "wins": 84,
+   "alive": true,
+   "in_pos": false
+  },
+  "acvr-02": {
+   "cash": -2.62,
+   "pnl": -52.62,
+   "trades": 46,
+   "settled": 46,
+   "wins": 19,
+   "alive": false,
+   "in_pos": false
+  },
+  "acvr-03": {
+   "cash": 23.8,
+   "pnl": -26.2,
+   "trades": 9,
+   "settled": 9,
+   "wins": 3,
+   "alive": true,
+   "in_pos": false
+  },
+  "acvr-04": {
+   "cash": 17.43,
+   "pnl": -32.57,
+   "trades": 10,
+   "settled": 10,
+   "wins": 3,
+   "alive": true,
+   "in_pos": false
+  },
+  "acvr-05": {
+   "cash": 45.0,
+   "pnl": -5.0,
+   "trades": 143,
+   "settled": 143,
+   "wins": 86,
+   "alive": true,
+   "in_pos": false
+  },
+  "acvr-06": {
+   "cash": -2.62,
+   "pnl": -52.62,
+   "trades": 46,
+   "settled": 46,
+   "wins": 19,
+   "alive": false,
+   "in_pos": false
+  },
+  "acvr-07": {
+   "cash": 78.94,
+   "pnl": 28.94,
+   "trades": 131,
+   "settled": 131,
+   "wins": 81,
+   "alive": true,
+   "in_pos": false
+  },
+  "acvr-08": {
+   "cash": -5.98,
+   "pnl": -55.98,
+   "trades": 45,
+   "settled": 45,
+   "wins": 18,
+   "alive": false,
+   "in_pos": false
+  },
+  "acvr-09": {
+   "cash": 29.96,
+   "pnl": -20.04,
+   "trades": 5,
+   "settled": 5,
+   "wins": 1,
+   "alive": true,
+   "in_pos": false
+  },
+  "acvr-10": {
+   "cash": 45.14,
+   "pnl": -4.86,
+   "trades": 7,
+   "settled": 7,
+   "wins": 3,
+   "alive": true,
+   "in_pos": false
+  },
+  "acvr-11": {
+   "cash": 62.85,
+   "pnl": 12.85,
+   "trades": 134,
+   "settled": 134,
+   "wins": 81,
+   "alive": true,
+   "in_pos": false
+  },
+  "acvr-12": {
+   "cash": -5.98,
+   "pnl": -55.98,
+   "trades": 45,
+   "settled": 45,
+   "wins": 18,
+   "alive": false,
+   "in_pos": false
+  },
+  "snipe-01": {
+   "cash": 2.27,
+   "pnl": -47.73,
+   "trades": 344,
+   "settled": 199,
+   "wins": 161,
+   "alive": true,
+   "in_pos": false
+  },
+  "snipe-02": {
+   "cash": -196.27,
+   "pnl": -246.27,
+   "trades": 296,
+   "settled": 150,
+   "wins": 90,
+   "alive": false,
+   "in_pos": false
+  },
+  "snipe-03": {
+   "cash": 3.39,
+   "pnl": -39.3,
+   "trades": 357,
+   "settled": 200,
+   "wins": 168,
+   "alive": true,
+   "in_pos": true
+  },
+  "snipe-04": {
+   "cash": -196.09,
+   "pnl": -246.09,
+   "trades": 299,
+   "settled": 152,
+   "wins": 99,
+   "alive": false,
+   "in_pos": false
+  },
+  "snipe-05": {
+   "cash": -19.39,
+   "pnl": -69.39,
+   "trades": 328,
+   "settled": 190,
+   "wins": 150,
+   "alive": false,
+   "in_pos": false
+  },
+  "snipe-06": {
+   "cash": -184.0,
+   "pnl": -234.0,
+   "trades": 256,
+   "settled": 129,
+   "wins": 77,
+   "alive": false,
+   "in_pos": false
+  },
+  "snipe-07": {
+   "cash": 0.3,
+   "pnl": -43.03,
+   "trades": 351,
+   "settled": 195,
+   "wins": 163,
+   "alive": false,
+   "in_pos": true
+  },
+  "snipe-08": {
+   "cash": -196.01,
+   "pnl": -246.01,
+   "trades": 279,
+   "settled": 141,
+   "wins": 93,
+   "alive": false,
+   "in_pos": false
+  },
+  "snipe-09": {
+   "cash": -20.5,
+   "pnl": -70.5,
+   "trades": 219,
+   "settled": 130,
+   "wins": 99,
+   "alive": false,
+   "in_pos": false
+  },
+  "snipe-10": {
+   "cash": -187.05,
+   "pnl": -237.05,
+   "trades": 236,
+   "settled": 120,
+   "wins": 70,
+   "alive": false,
+   "in_pos": false
+  },
+  "snipe-11": {
+   "cash": -6.98,
+   "pnl": -56.98,
+   "trades": 333,
+   "settled": 187,
+   "wins": 153,
+   "alive": false,
+   "in_pos": false
+  },
+  "snipe-12": {
+   "cash": -197.55,
+   "pnl": -247.55,
+   "trades": 246,
+   "settled": 125,
+   "wins": 79,
+   "alive": false,
+   "in_pos": false
+  },
+  "openfade-01": {
+   "cash": 10.34,
+   "pnl": -39.66,
+   "trades": 76,
+   "settled": 76,
+   "wins": 22,
+   "alive": true,
+   "in_pos": false
+  },
+  "openfade-02": {
+   "cash": 38.09,
+   "pnl": -11.91,
+   "trades": 53,
+   "settled": 53,
+   "wins": 19,
+   "alive": true,
+   "in_pos": false
+  },
+  "openfade-03": {
+   "cash": 15.19,
+   "pnl": -29.53,
+   "trades": 133,
+   "settled": 132,
+   "wins": 40,
+   "alive": true,
+   "in_pos": true
+  },
+  "openfade-04": {
+   "cash": 90.14,
+   "pnl": 40.14,
+   "trades": 94,
+   "settled": 94,
+   "wins": 36,
+   "alive": true,
+   "in_pos": false
+  },
+  "openfade-05": {
+   "cash": -4.7,
+   "pnl": -54.7,
+   "trades": 29,
+   "settled": 29,
+   "wins": 6,
+   "alive": false,
+   "in_pos": false
+  },
+  "openfade-06": {
+   "cash": 40.36,
+   "pnl": -9.64,
+   "trades": 12,
+   "settled": 12,
+   "wins": 4,
+   "alive": true,
+   "in_pos": false
+  },
+  "openfade-07": {
+   "cash": -16.61,
+   "pnl": -66.61,
+   "trades": 63,
+   "settled": 63,
+   "wins": 14,
+   "alive": false,
+   "in_pos": false
+  },
+  "openfade-08": {
+   "cash": 31.67,
+   "pnl": -18.33,
+   "trades": 36,
+   "settled": 36,
+   "wins": 11,
+   "alive": true,
+   "in_pos": false
+  },
+  "openfade-09": {
+   "cash": 48.73,
+   "pnl": -1.27,
+   "trades": 7,
+   "settled": 7,
+   "wins": 2,
+   "alive": true,
+   "in_pos": false
+  },
+  "openfade-10": {
+   "cash": 52.65,
+   "pnl": 2.65,
+   "trades": 2,
+   "settled": 2,
+   "wins": 1,
+   "alive": true,
+   "in_pos": false
+  },
+  "openfade-11": {
+   "cash": 56.83,
+   "pnl": 6.83,
+   "trades": 21,
+   "settled": 21,
+   "wins": 6,
+   "alive": true,
+   "in_pos": false
+  },
+  "openfade-12": {
+   "cash": 47.38,
+   "pnl": -2.62,
+   "trades": 6,
+   "settled": 6,
+   "wins": 2,
+   "alive": true,
+   "in_pos": false
+  }
+ },
+ "pending": 5
+}
