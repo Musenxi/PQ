@@ -60,6 +60,11 @@ GAP_MIN = 0.06            # farm1h fair-05: the FAIR 1h family median gap
 TAU_MIN = 300             # farm1h fair-05: entries only while tau >= 300 s
 BAND = (0.15, 0.92)       # farm1h fair-05 band
 ENTRY_DELAY_S = 60        # farm1h: no fair-anchored entries in the first 60 s
+MIN_RETRY_S = 60          # per-window order count is UNLIMITED (lizi,
+                          # 2026-11-19 ~23:03 JST); this cooldown only
+                          # stops the loop machine-gunning while one
+                          # signal persists. Per-order $5 cap and the
+                          # balance bound are unchanged.
 STALE_BOOK_MS = 1000
 FUTURE_BOOK_MS = -2000
 
@@ -376,7 +381,8 @@ def main():
     win = None
     warmed_slug = None
     last_hb = 0.0
-    pending_settle = {o["slug"]: o for o in ledger.open_orders}
+    last_try = 0.0
+    pending_settle = {(o.get("key") or o["slug"]): o for o in ledger.open_orders}
 
     while True:
         try:
@@ -384,8 +390,9 @@ def main():
             ledger.roll_day()
 
             # settle any finished positions
-            for slug in list(pending_settle):
-                o = pending_settle[slug]
+            for k in list(pending_settle):
+                o = pending_settle[k]
+                slug = o["slug"]
                 if now < o["end"] + 20:
                     continue
                 try:
@@ -405,13 +412,15 @@ def main():
                            "settled_at": datetime.now(timezone.utc).isoformat()}
                     append_jsonl("settlements.jsonl", row)
                     print(f"[settle] {slug} {o['side']} winner={winner} pnl={pnl:+.2f}", flush=True)
-                    del pending_settle[slug]
-                    ledger.open_orders = [x for x in ledger.open_orders if x["slug"] != slug]
+                    del pending_settle[k]
+                    ledger.open_orders = [x for x in ledger.open_orders
+                                          if (x.get("key") or x["slug"]) != k]
                     ledger.save()
 
             wstart = int(now // 3600) * 3600
             if win is None or win.start != wstart:
                 win = Window(wstart)
+                last_try = 0.0
                 try:
                     win.load()
                     print(f"[window] {win.slug} open={win.open_price} min_size={win.min_size} tick={win.tick}", flush=True)
@@ -515,9 +524,10 @@ def main():
                 print(f"[hb] {win.slug} basis={win.basis:.1f} spot={spot:.1f} fair_up={fair_up:.3f} "
                       f"gap_up={g_up} gap_dn={g_dn} tau={tau:.0f}", flush=True)
 
-            # FAIR decision (median config), one order per window
+            # FAIR decision (fair-05); entries per window unlimited
+            # (lizi, 2026-11-19 ~23:03 JST) with a 60 s cooldown
             if now - win.start >= ENTRY_DELAY_S and tau >= TAU_MIN \
-                    and win.slug not in ledger.traded_windows:
+                    and now - last_try >= MIN_RETRY_S:
                 best = None
                 for s in ("Up", "Down"):
                     if s not in books:
@@ -603,10 +613,11 @@ def main():
                                 orow["fee_est"] = round(fee_for(fshares, fprice or ask, win.fee_rate), 4)
                                 orow["end"] = win.end
                                 ledger.spent_today += orow["filled_cost"]
+                                orow["key"] = f"{win.slug}#{int(now * 1000)}"
                                 ledger.open_orders.append(
-                                    {k: orow[k] for k in ("slug", "side", "filled_shares",
-                                                          "filled_cost", "fee_est", "end")})
-                                pending_settle[win.slug] = orow
+                                    {kk: orow[kk] for kk in ("key", "slug", "side", "filled_shares",
+                                                             "filled_cost", "fee_est", "end")})
+                                pending_settle[orow["key"]] = orow
                                 print(f"[order] ACCEPTED {win.slug} {side} {fshares} sh "
                                       f"price={fprice} (ask {ask})", flush=True)
                             else:
@@ -617,12 +628,12 @@ def main():
                             ledger.orders_today += 1
                             print(f"[order] ERROR {win.slug} {side}: {e}", flush=True)
                         append_jsonl("orders.jsonl", orow)
-                        ledger.traded_windows.add(win.slug)
                         ledger.save()
                     append_jsonl("signals.jsonl", sig_row)
-                    # one disposition per window, whatever it was: the
-                    # denominator discipline is the same as the farm's
-                    ledger.traded_windows.add(win.slug)
+                    # every disposition starts the cooldown; after
+                    # MIN_RETRY_S a fresh signal in the same window
+                    # may fire again (unlimited entries per window)
+                    last_try = now
                     ledger.save()
             time.sleep(2)
         except KeyboardInterrupt:
