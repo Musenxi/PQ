@@ -1,0 +1,25 @@
+family  trades decis  nwin      sum mean/win  95% CI (block bootstrap)
+ACVR       448    99    77  -195.84    -2.54  [-11.57, +2.58]
+          up     windows= 11  sum= -165.65  mean=-15.06
+          down   windows= 10  sum=  -87.74  mean=-8.77
+          range  windows= 56  sum=  +57.55  mean=+1.03
+FAIR      1124   110    99 +1033.17   +10.44  [+3.23, +21.47]
+          up     windows= 16  sum=  +60.69  mean=+3.79
+          down   windows= 18  sum= +199.44  mean=+11.08
+          range  windows= 65  sum= +773.05  mean=+11.89
+MOM        879   165    97  +180.79    +1.86  [-1.22, +6.14]
+          up     windows= 17  sum=  -17.17  mean=-1.01
+          down   windows= 15  sum=  +32.03  mean=+2.14
+          range  windows= 65  sum= +165.94  mean=+2.55
+OPENFADE    302    72    70  +100.31    +1.43  [-7.37, +8.76]
+          up     windows= 13  sum=  -57.71  mean=-4.44
+          down   windows= 14  sum= -291.88  mean=-20.85
+          range  windows= 43  sum= +449.90  mean=+10.46
+REV        609   163    97  -227.49    -2.35  [-6.79, +2.04]
+          up     windows= 18  sum=  -77.12  mean=-4.28
+          down   windows= 14  sum= -199.27  mean=-14.23
+          range  windows= 65  sum=  +48.90  mean=+0.75
+SNIPE     1048    97    91   -88.47    -0.97  [-6.00, +2.93]
+          up     windows= 14  sum= -179.92  mean=-12.85
+          down   windows= 15  sum=  +87.19  mean=+5.81
+          range  windows= 61  sum=  +11.78  mean=+0.19

@@ -1,0 +1,830 @@
+[
+ {
+  "family": "MOM",
+  "lookback": 10,
+  "thr": 20.0,
+  "band": [
+   0.15,
+   0.92
+  ],
+  "tau_lo": 30,
+  "tau_hi": 240,
+  "id": "mom-01"
+ },
+ {
+  "family": "MOM",
+  "lookback": 10,
+  "thr": 20.0,
+  "band": [
+   0.35,
+   0.85
+  ],
+  "tau_lo": 30,
+  "tau_hi": 240,
+  "id": "mom-02"
+ },
+ {
+  "family": "MOM",
+  "lookback": 10,
+  "thr": 40.0,
+  "band": [
+   0.15,
+   0.92
+  ],
+  "tau_lo": 30,
+  "tau_hi": 240,
+  "id": "mom-03"
+ },
+ {
+  "family": "MOM",
+  "lookback": 10,
+  "thr": 40.0,
+  "band": [
+   0.35,
+   0.85
+  ],
+  "tau_lo": 30,
+  "tau_hi": 240,
+  "id": "mom-04"
+ },
+ {
+  "family": "MOM",
+  "lookback": 30,
+  "thr": 20.0,
+  "band": [
+   0.15,
+   0.92
+  ],
+  "tau_lo": 30,
+  "tau_hi": 240,
+  "id": "mom-05"
+ },
+ {
+  "family": "MOM",
+  "lookback": 30,
+  "thr": 20.0,
+  "band": [
+   0.35,
+   0.85
+  ],
+  "tau_lo": 30,
+  "tau_hi": 240,
+  "id": "mom-06"
+ },
+ {
+  "family": "MOM",
+  "lookback": 30,
+  "thr": 40.0,
+  "band": [
+   0.15,
+   0.92
+  ],
+  "tau_lo": 30,
+  "tau_hi": 240,
+  "id": "mom-07"
+ },
+ {
+  "family": "MOM",
+  "lookback": 30,
+  "thr": 40.0,
+  "band": [
+   0.35,
+   0.85
+  ],
+  "tau_lo": 30,
+  "tau_hi": 240,
+  "id": "mom-08"
+ },
+ {
+  "family": "MOM",
+  "lookback": 60,
+  "thr": 20.0,
+  "band": [
+   0.15,
+   0.92
+  ],
+  "tau_lo": 30,
+  "tau_hi": 240,
+  "id": "mom-09"
+ },
+ {
+  "family": "MOM",
+  "lookback": 60,
+  "thr": 20.0,
+  "band": [
+   0.35,
+   0.85
+  ],
+  "tau_lo": 30,
+  "tau_hi": 240,
+  "id": "mom-10"
+ },
+ {
+  "family": "MOM",
+  "lookback": 60,
+  "thr": 40.0,
+  "band": [
+   0.15,
+   0.92
+  ],
+  "tau_lo": 30,
+  "tau_hi": 240,
+  "id": "mom-11"
+ },
+ {
+  "family": "MOM",
+  "lookback": 60,
+  "thr": 40.0,
+  "band": [
+   0.35,
+   0.85
+  ],
+  "tau_lo": 30,
+  "tau_hi": 240,
+  "id": "mom-12"
+ },
+ {
+  "family": "REV",
+  "lookback": 10,
+  "thr": 20.0,
+  "band": [
+   0.15,
+   0.92
+  ],
+  "tau_lo": 30,
+  "tau_hi": 240,
+  "id": "rev-01"
+ },
+ {
+  "family": "REV",
+  "lookback": 10,
+  "thr": 20.0,
+  "band": [
+   0.35,
+   0.85
+  ],
+  "tau_lo": 30,
+  "tau_hi": 240,
+  "id": "rev-02"
+ },
+ {
+  "family": "REV",
+  "lookback": 10,
+  "thr": 40.0,
+  "band": [
+   0.15,
+   0.92
+  ],
+  "tau_lo": 30,
+  "tau_hi": 240,
+  "id": "rev-03"
+ },
+ {
+  "family": "REV",
+  "lookback": 10,
+  "thr": 40.0,
+  "band": [
+   0.35,
+   0.85
+  ],
+  "tau_lo": 30,
+  "tau_hi": 240,
+  "id": "rev-04"
+ },
+ {
+  "family": "REV",
+  "lookback": 30,
+  "thr": 20.0,
+  "band": [
+   0.15,
+   0.92
+  ],
+  "tau_lo": 30,
+  "tau_hi": 240,
+  "id": "rev-05"
+ },
+ {
+  "family": "REV",
+  "lookback": 30,
+  "thr": 20.0,
+  "band": [
+   0.35,
+   0.85
+  ],
+  "tau_lo": 30,
+  "tau_hi": 240,
+  "id": "rev-06"
+ },
+ {
+  "family": "REV",
+  "lookback": 30,
+  "thr": 40.0,
+  "band": [
+   0.15,
+   0.92
+  ],
+  "tau_lo": 30,
+  "tau_hi": 240,
+  "id": "rev-07"
+ },
+ {
+  "family": "REV",
+  "lookback": 30,
+  "thr": 40.0,
+  "band": [
+   0.35,
+   0.85
+  ],
+  "tau_lo": 30,
+  "tau_hi": 240,
+  "id": "rev-08"
+ },
+ {
+  "family": "REV",
+  "lookback": 60,
+  "thr": 20.0,
+  "band": [
+   0.15,
+   0.92
+  ],
+  "tau_lo": 30,
+  "tau_hi": 240,
+  "id": "rev-09"
+ },
+ {
+  "family": "REV",
+  "lookback": 60,
+  "thr": 20.0,
+  "band": [
+   0.35,
+   0.85
+  ],
+  "tau_lo": 30,
+  "tau_hi": 240,
+  "id": "rev-10"
+ },
+ {
+  "family": "REV",
+  "lookback": 60,
+  "thr": 40.0,
+  "band": [
+   0.15,
+   0.92
+  ],
+  "tau_lo": 30,
+  "tau_hi": 240,
+  "id": "rev-11"
+ },
+ {
+  "family": "REV",
+  "lookback": 60,
+  "thr": 40.0,
+  "band": [
+   0.35,
+   0.85
+  ],
+  "tau_lo": 30,
+  "tau_hi": 240,
+  "id": "rev-12"
+ },
+ {
+  "id": "fair-01",
+  "family": "FAIR",
+  "gap": 0.05,
+  "tau_min": 30,
+  "band": [
+   0.15,
+   0.92
+  ]
+ },
+ {
+  "id": "fair-02",
+  "family": "FAIR",
+  "gap": 0.05,
+  "tau_min": 30,
+  "band": [
+   0.3,
+   0.8
+  ]
+ },
+ {
+  "id": "fair-03",
+  "family": "FAIR",
+  "gap": 0.05,
+  "tau_min": 60,
+  "band": [
+   0.15,
+   0.92
+  ]
+ },
+ {
+  "id": "fair-04",
+  "family": "FAIR",
+  "gap": 0.05,
+  "tau_min": 60,
+  "band": [
+   0.3,
+   0.8
+  ]
+ },
+ {
+  "id": "fair-05",
+  "family": "FAIR",
+  "gap": 0.08,
+  "tau_min": 30,
+  "band": [
+   0.15,
+   0.92
+  ]
+ },
+ {
+  "id": "fair-06",
+  "family": "FAIR",
+  "gap": 0.08,
+  "tau_min": 30,
+  "band": [
+   0.3,
+   0.8
+  ]
+ },
+ {
+  "id": "fair-07",
+  "family": "FAIR",
+  "gap": 0.08,
+  "tau_min": 60,
+  "band": [
+   0.15,
+   0.92
+  ]
+ },
+ {
+  "id": "fair-08",
+  "family": "FAIR",
+  "gap": 0.08,
+  "tau_min": 60,
+  "band": [
+   0.3,
+   0.8
+  ]
+ },
+ {
+  "id": "fair-09",
+  "family": "FAIR",
+  "gap": 0.12,
+  "tau_min": 30,
+  "band": [
+   0.15,
+   0.92
+  ]
+ },
+ {
+  "id": "fair-10",
+  "family": "FAIR",
+  "gap": 0.12,
+  "tau_min": 30,
+  "band": [
+   0.3,
+   0.8
+  ]
+ },
+ {
+  "id": "fair-11",
+  "family": "FAIR",
+  "gap": 0.12,
+  "tau_min": 60,
+  "band": [
+   0.15,
+   0.92
+  ]
+ },
+ {
+  "id": "fair-12",
+  "family": "FAIR",
+  "gap": 0.12,
+  "tau_min": 60,
+  "band": [
+   0.3,
+   0.8
+  ]
+ },
+ {
+  "id": "acvr-01",
+  "family": "ACVR",
+  "thr": 0.02,
+  "branch": "mom",
+  "tau_lo": 30,
+  "tau_hi": 150,
+  "band": [
+   0.15,
+   0.92
+  ]
+ },
+ {
+  "id": "acvr-02",
+  "family": "ACVR",
+  "thr": 0.02,
+  "branch": "mom",
+  "tau_lo": 60,
+  "tau_hi": 240,
+  "band": [
+   0.15,
+   0.92
+  ]
+ },
+ {
+  "id": "acvr-03",
+  "family": "ACVR",
+  "thr": 0.02,
+  "branch": "rev",
+  "tau_lo": 30,
+  "tau_hi": 150,
+  "band": [
+   0.15,
+   0.92
+  ]
+ },
+ {
+  "id": "acvr-04",
+  "family": "ACVR",
+  "thr": 0.02,
+  "branch": "rev",
+  "tau_lo": 60,
+  "tau_hi": 240,
+  "band": [
+   0.15,
+   0.92
+  ]
+ },
+ {
+  "id": "acvr-05",
+  "family": "ACVR",
+  "thr": 0.02,
+  "branch": "both",
+  "tau_lo": 30,
+  "tau_hi": 150,
+  "band": [
+   0.15,
+   0.92
+  ]
+ },
+ {
+  "id": "acvr-06",
+  "family": "ACVR",
+  "thr": 0.02,
+  "branch": "both",
+  "tau_lo": 60,
+  "tau_hi": 240,
+  "band": [
+   0.15,
+   0.92
+  ]
+ },
+ {
+  "id": "acvr-07",
+  "family": "ACVR",
+  "thr": 0.05,
+  "branch": "mom",
+  "tau_lo": 30,
+  "tau_hi": 150,
+  "band": [
+   0.15,
+   0.92
+  ]
+ },
+ {
+  "id": "acvr-08",
+  "family": "ACVR",
+  "thr": 0.05,
+  "branch": "mom",
+  "tau_lo": 60,
+  "tau_hi": 240,
+  "band": [
+   0.15,
+   0.92
+  ]
+ },
+ {
+  "id": "acvr-09",
+  "family": "ACVR",
+  "thr": 0.05,
+  "branch": "rev",
+  "tau_lo": 30,
+  "tau_hi": 150,
+  "band": [
+   0.15,
+   0.92
+  ]
+ },
+ {
+  "id": "acvr-10",
+  "family": "ACVR",
+  "thr": 0.05,
+  "branch": "rev",
+  "tau_lo": 60,
+  "tau_hi": 240,
+  "band": [
+   0.15,
+   0.92
+  ]
+ },
+ {
+  "id": "acvr-11",
+  "family": "ACVR",
+  "thr": 0.05,
+  "branch": "both",
+  "tau_lo": 30,
+  "tau_hi": 150,
+  "band": [
+   0.15,
+   0.92
+  ]
+ },
+ {
+  "id": "acvr-12",
+  "family": "ACVR",
+  "thr": 0.05,
+  "branch": "both",
+  "tau_lo": 60,
+  "tau_hi": 240,
+  "band": [
+   0.15,
+   0.92
+  ]
+ },
+ {
+  "id": "snipe-01",
+  "family": "SNIPE",
+  "gap": 0.06,
+  "pair_max": 0.95,
+  "exit_after": 0,
+  "tau_min": 60,
+  "band": [
+   0.15,
+   0.92
+  ]
+ },
+ {
+  "id": "snipe-02",
+  "family": "SNIPE",
+  "gap": 0.06,
+  "pair_max": 0.95,
+  "exit_after": 60,
+  "tau_min": 60,
+  "band": [
+   0.15,
+   0.92
+  ]
+ },
+ {
+  "id": "snipe-03",
+  "family": "SNIPE",
+  "gap": 0.06,
+  "pair_max": 0.97,
+  "exit_after": 0,
+  "tau_min": 60,
+  "band": [
+   0.15,
+   0.92
+  ]
+ },
+ {
+  "id": "snipe-04",
+  "family": "SNIPE",
+  "gap": 0.06,
+  "pair_max": 0.97,
+  "exit_after": 60,
+  "tau_min": 60,
+  "band": [
+   0.15,
+   0.92
+  ]
+ },
+ {
+  "id": "snipe-05",
+  "family": "SNIPE",
+  "gap": 0.08,
+  "pair_max": 0.95,
+  "exit_after": 0,
+  "tau_min": 60,
+  "band": [
+   0.15,
+   0.92
+  ]
+ },
+ {
+  "id": "snipe-06",
+  "family": "SNIPE",
+  "gap": 0.08,
+  "pair_max": 0.95,
+  "exit_after": 60,
+  "tau_min": 60,
+  "band": [
+   0.15,
+   0.92
+  ]
+ },
+ {
+  "id": "snipe-07",
+  "family": "SNIPE",
+  "gap": 0.08,
+  "pair_max": 0.97,
+  "exit_after": 0,
+  "tau_min": 60,
+  "band": [
+   0.15,
+   0.92
+  ]
+ },
+ {
+  "id": "snipe-08",
+  "family": "SNIPE",
+  "gap": 0.08,
+  "pair_max": 0.97,
+  "exit_after": 60,
+  "tau_min": 60,
+  "band": [
+   0.15,
+   0.92
+  ]
+ },
+ {
+  "id": "snipe-09",
+  "family": "SNIPE",
+  "gap": 0.1,
+  "pair_max": 0.95,
+  "exit_after": 0,
+  "tau_min": 60,
+  "band": [
+   0.15,
+   0.92
+  ]
+ },
+ {
+  "id": "snipe-10",
+  "family": "SNIPE",
+  "gap": 0.1,
+  "pair_max": 0.95,
+  "exit_after": 60,
+  "tau_min": 60,
+  "band": [
+   0.15,
+   0.92
+  ]
+ },
+ {
+  "id": "snipe-11",
+  "family": "SNIPE",
+  "gap": 0.1,
+  "pair_max": 0.97,
+  "exit_after": 0,
+  "tau_min": 60,
+  "band": [
+   0.15,
+   0.92
+  ]
+ },
+ {
+  "id": "snipe-12",
+  "family": "SNIPE",
+  "gap": 0.1,
+  "pair_max": 0.97,
+  "exit_after": 60,
+  "tau_min": 60,
+  "band": [
+   0.15,
+   0.92
+  ]
+ },
+ {
+  "id": "openfade-01",
+  "family": "OPENFADE",
+  "thr": 30.0,
+  "entry_start": 8,
+  "entry_end": 30,
+  "band": [
+   0.15,
+   0.45
+  ]
+ },
+ {
+  "id": "openfade-02",
+  "family": "OPENFADE",
+  "thr": 30.0,
+  "entry_start": 8,
+  "entry_end": 30,
+  "band": [
+   0.25,
+   0.48
+  ]
+ },
+ {
+  "id": "openfade-03",
+  "family": "OPENFADE",
+  "thr": 30.0,
+  "entry_start": 8,
+  "entry_end": 60,
+  "band": [
+   0.15,
+   0.45
+  ]
+ },
+ {
+  "id": "openfade-04",
+  "family": "OPENFADE",
+  "thr": 30.0,
+  "entry_start": 8,
+  "entry_end": 60,
+  "band": [
+   0.25,
+   0.48
+  ]
+ },
+ {
+  "id": "openfade-05",
+  "family": "OPENFADE",
+  "thr": 50.0,
+  "entry_start": 8,
+  "entry_end": 30,
+  "band": [
+   0.15,
+   0.45
+  ]
+ },
+ {
+  "id": "openfade-06",
+  "family": "OPENFADE",
+  "thr": 50.0,
+  "entry_start": 8,
+  "entry_end": 30,
+  "band": [
+   0.25,
+   0.48
+  ]
+ },
+ {
+  "id": "openfade-07",
+  "family": "OPENFADE",
+  "thr": 50.0,
+  "entry_start": 8,
+  "entry_end": 60,
+  "band": [
+   0.15,
+   0.45
+  ]
+ },
+ {
+  "id": "openfade-08",
+  "family": "OPENFADE",
+  "thr": 50.0,
+  "entry_start": 8,
+  "entry_end": 60,
+  "band": [
+   0.25,
+   0.48
+  ]
+ },
+ {
+  "id": "openfade-09",
+  "family": "OPENFADE",
+  "thr": 70.0,
+  "entry_start": 8,
+  "entry_end": 30,
+  "band": [
+   0.15,
+   0.45
+  ]
+ },
+ {
+  "id": "openfade-10",
+  "family": "OPENFADE",
+  "thr": 70.0,
+  "entry_start": 8,
+  "entry_end": 30,
+  "band": [
+   0.25,
+   0.48
+  ]
+ },
+ {
+  "id": "openfade-11",
+  "family": "OPENFADE",
+  "thr": 70.0,
+  "entry_start": 8,
+  "entry_end": 60,
+  "band": [
+   0.15,
+   0.45
+  ]
+ },
+ {
+  "id": "openfade-12",
+  "family": "OPENFADE",
+  "thr": 70.0,
+  "entry_start": 8,
+  "entry_end": 60,
+  "band": [
+   0.25,
+   0.48
+  ]
+ }
+]
