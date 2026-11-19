@@ -44,6 +44,10 @@ PM_WEB = "https://polymarket.com"
 UA = {"User-Agent": "Mozilla/5.0 (paper-farm)"}
 STAKE = 5.0
 START_CASH = 50.0
+# UNLIMITED_CASH (lizi, 2026-11-19): paper accounts never bust --
+# the bankroll gate is off so every family keeps collecting data;
+# cash/pnl accounting is unchanged (cash may go negative).
+UNLIMITED_CASH = True
 
 
 def http_json(url, timeout=12):
@@ -264,7 +268,7 @@ class Account:
 
     @property
     def alive(self):
-        return self.cash >= 1.0
+        return True if UNLIMITED_CASH else self.cash >= 1.0
 
     def snapshot(self):
         return {"cash": round(self.cash, 2), "pnl": round(self.pnl, 2),
@@ -613,7 +617,7 @@ def execute_buy(a, win, side, leg, ctx, order):
         if pair_cost >= a.cfg["pair_max"]:
             return False
     fees = fee_for(shares, vwap, win.fee_rate)
-    if a.cash < cost + fees:
+    if not UNLIMITED_CASH and a.cash < cost + fees:
         return False
     a.cash -= cost + fees
     if a.cfg["family"] == "MVAL" and side in a.pos:
