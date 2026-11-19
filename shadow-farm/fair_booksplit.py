@@ -24,9 +24,13 @@ bootstrap 95% CI --
 
 Auxiliary outputs (REPORT ONLY, never enter the decision):
   * per-account attribution: each account's settlement is grouped by
-    its OWN leg-1 fill's would_reject, then summed per window -- closer
-    to the sample v2.1 would actually trade, and immune to the
-    mixed-window exclusion shrinking the fresh sample.
+    its OWN leg-1 fill's would_reject -- closer to the sample v2.1
+    would actually trade, and immune to the mixed-window exclusion
+    shrinking the fresh sample. Groups contribute different account
+    counts per window, so raw per-window sums are NOT comparable
+    across groups; this section therefore reports the per-account
+    average per window (window PnL / accounts present) plus the
+    per-settlement mean.
   * threshold sensitivity: the same window split recomputed from the
     logged book ages at 500ms and 2000ms instead of 1000ms.
   * fresh vs stale per-window means and their difference (block
@@ -160,19 +164,37 @@ def main():
               "observing.")
 
     # ---- auxiliary 1: per-account attribution (report only) ----
+    # Normalised per account: groups contribute different numbers of
+    # accounts to the same window, so per-window SUMS would compare
+    # account counts, not book freshness. Report the per-account
+    # average per window (and the plain per-settlement mean).
     aflags = defaultdict(set)
     for t in marked:
         aflags[(t["account"], t["slug"])].add(bool(t["would_reject"]))
     agroup = {k: group_of(fs) for k, fs in aflags.items()}
-    aseries = {}
     for g in ("fresh", "stale", "mixed"):
-        per_win = defaultdict(float)
+        tot = defaultdict(float)
+        cnt = defaultdict(int)
+        nsett = 0
+        spnl = 0.0
         for (acct, slug), pnl in acct_pnl.items():
             if agroup.get((acct, slug)) == g:
-                per_win[slug] += pnl
-        aseries[g] = [per_win[s] for s in sorted(per_win)]
-    print("auxiliary (report only): per-account attribution, summed per window:")
-    print_group("acct", aseries)
+                tot[slug] += pnl
+                cnt[slug] += 1
+                nsett += 1
+                spnl += pnl
+        aseries = [tot[s] / cnt[s] for s in sorted(tot)]
+        if aseries:
+            ci = block_bootstrap_ci(aseries)
+            ci_txt = f"[{ci[0]:+.2f}, {ci[1]:+.2f}]" if ci else "n too small"
+            print(f"  [acct] {g:<6} windows={len(aseries):>3}  settlements={nsett:>4}  "
+                  f"mean/settlement={spnl / nsett:+.2f}  "
+                  f"per-account mean/win={sum(aseries) / len(aseries):+.2f}  95% CI {ci_txt}")
+        else:
+            print(f"  [acct] {g:<6} windows=  0")
+    print("auxiliary (report only): per-account attribution above; "
+          "per-window sums are not comparable across groups (different "
+          "account counts), use the per-account figures.")
 
     # ---- auxiliary 2: threshold sensitivity (report only) ----
     aged = [t for t in fills if "book_age_ms" in t]
