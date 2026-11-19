@@ -140,6 +140,20 @@ def walk_cost(asks, rate, q):
     return None
 
 
+def walk_proceeds(bids, rate, q):
+    """Net proceeds (after taker fee) from selling q shares walking the
+    bid ladder; None if depth < q."""
+    got = 0.0
+    left = q
+    for p, s in bids:
+        take = min(s, left)
+        got += take * p - take * rate * p * (1 - p)
+        left -= take
+        if left <= 1e-9:
+            return got
+    return None
+
+
 def eval_event(ev, books):
     """Compute basket metrics for one event from fetched books."""
     legs = []
@@ -156,8 +170,11 @@ def eval_event(ev, books):
             "label": m["label"],
             "best_ask": book["asks"][0][0],
             "best_ask_size": book["asks"][0][1],
+            "best_bid": book["bids"][0][0] if book["bids"] else None,
+            "bid_depth": sum(s for _, s in book["bids"]),
             "rate": m["rate"],
             "asks": book["asks"],
+            "bids": book["bids"],
         })
     profits = {}
     for q in Q_GRID:
@@ -173,6 +190,27 @@ def eval_event(ev, books):
             total += c
         if ok:
             profits[q] = q - total
+    # sell side: mint a full set for $1/share-set and sell every leg
+    # into the bids; profit = net proceeds - q. Same exhaustiveness
+    # guard as the buy side.
+    profits_sell = {}
+    sum_best_bids = 0.0
+    bids_ok = all(l["best_bid"] is not None for l in legs)
+    if bids_ok:
+        sum_best_bids = sum(l["best_bid"] for l in legs)
+        for q in Q_GRID:
+            if any(l["bid_depth"] < q for l in legs):
+                continue
+            total = 0.0
+            ok = True
+            for leg, m in zip(legs, ev["markets"]):
+                pr = walk_proceeds(leg["bids"], m["rate"], q)
+                if pr is None:
+                    ok = False
+                    break
+                total += pr
+            if ok:
+                profits_sell[q] = total - q
     mids = [m["mid"] for m in ev["markets"]]
     sum_mids = round(sum(mids), 4) if all(x is not None for x in mids) else None
     has_other = any("other" in (m["label"] or "").lower() for m in ev["markets"])
@@ -188,6 +226,8 @@ def eval_event(ev, books):
         "exhaustive": exhaustive,
         "max_shares": total_depth,
         "profits": {str(q): round(p, 4) for q, p in profits.items()},
+        "sum_best_bids": round(sum_best_bids, 4) if bids_ok else None,
+        "profits_sell": {str(q): round(p, 4) for q, p in profits_sell.items()},
         "legs": [{"label": l["label"], "ask": l["best_ask"], "size": l["best_ask_size"]}
                  for l in legs],
     }
@@ -245,7 +285,11 @@ def main():
                             stats["n_profit"] += 1
                         else:
                             stats["n_trap"] += 1
+                    ps_primary = res["profits_sell"].get(str(PRIMARY_Q))
+                    if ps_primary is not None and ps_primary > 0 and res["exhaustive"]:
+                        stats["n_profit"] += 1
                     qualifies = (p_primary is not None and p_primary > LOG_PROFIT_FLOOR) \
+                        or (ps_primary is not None and ps_primary > LOG_PROFIT_FLOOR) \
                         or res["sum_best_asks"] < LOG_SUM_CEIL
                     # genuine candidates log at most every 30 s; non-exhaustive
                     # traps at most hourly (they are plentiful and slow-moving)

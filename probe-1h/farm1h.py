@@ -60,6 +60,35 @@ def norm_cdf(x):
     return 0.5 * (1.0 + math.erf(x / math.sqrt(2.0)))
 
 
+def norm_ppf(p):
+    """Inverse normal CDF (Acklam's approximation, |err| < 1.2e-9)."""
+    if p <= 0.0:
+        return -8.0
+    if p >= 1.0:
+        return 8.0
+    a = [-3.969683028665376e+01, 2.209460984245205e+02, -2.759285984469534e+02,
+         1.383577518672690e+02, -3.066479806614716e+01, 2.506628277459239e+00]
+    b = [-5.447609879822406e+01, 1.615858368580409e+02, -1.556989798598866e+02,
+         6.680131188771972e+01, -1.328068155288572e+01]
+    c = [-7.784894002430293e-03, -3.223964580411365e-01, -2.400758277161838e+00,
+         -2.549732539343734e+00, 4.374664141464968e+00, 2.938163982698783e+00]
+    d = [7.784695709041462e-03, 3.224671290700398e-01, 2.445134137142996e+00,
+         3.754408661907416e+00]
+    plow, phigh = 0.02425, 1 - 0.02425
+    if p < plow:
+        q = math.sqrt(-2 * math.log(p))
+        return (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / \
+            ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1)
+    if p > phigh:
+        q = math.sqrt(-2 * math.log(1 - p))
+        return -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / \
+            ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1)
+    q = p - 0.5
+    r = q * q
+    return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q / \
+        (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1)
+
+
 def fee_for(shares, price, rate=0.07):
     return shares * rate * price * (1.0 - price)
 
@@ -176,6 +205,21 @@ def build_configs():
                 n += 1
                 cfgs.append({"id": f"fair-{n:02d}", "family": "FAIR", "gap": gap,
                              "tau_min": tau_min, "band": band})
+    # LATE (added 2026-11-19 at lizi's instruction): cross-window /
+    # late-hour certainty. Only in the last tau_max seconds of the
+    # hour, only on the side whose TWAP path margin is already
+    # margin_z sigma (z recovered from the model fair), and only when
+    # the thin 1h book still prices that side at least `gap` below
+    # fair. Read with the 1h probe's post-fee-flip criteria, reported
+    # as its own family.
+    n = 0
+    for margin_z in (2.0, 3.0):
+        for gap in (0.03, 0.05):
+            for band in ((0.15, 0.92), (0.30, 0.80)):
+                n += 1
+                cfgs.append({"id": f"late-{n:02d}", "family": "LATE",
+                             "margin_z": margin_z, "gap": gap, "band": band,
+                             "tau_max": 600})
     return cfgs
 
 
@@ -667,6 +711,30 @@ def account_tick(a, win, ctx):
             return
         side = best_gap[1]
         extra = {"gap": round(best_gap[0], 3), "fair": round(ctx["fairs"][side], 3),
+                 "basis": round(ctx["basis"], 1)}
+    elif fam == "LATE":
+        if ctx.get("basis") is None or ctx["now"] - win.start < ENTRY_DELAY_S:
+            return
+        if tau > cfg["tau_max"]:
+            return
+        best_gap = None
+        for s in ("Up", "Down"):
+            ask = books[s][1][0]
+            if ask is None or not (cfg["band"][0] <= ask <= cfg["band"][1]):
+                continue
+            f = ctx["fairs"][s]
+            if f is None:
+                continue
+            z = norm_ppf(f)
+            gap = f - ask
+            if z >= cfg["margin_z"] and gap >= cfg["gap"]:
+                if best_gap is None or gap > best_gap[0]:
+                    best_gap = (gap, s, z)
+        if not best_gap:
+            return
+        side = best_gap[1]
+        extra = {"gap": round(best_gap[0], 3), "fair": round(ctx["fairs"][side], 3),
+                 "margin_z": round(best_gap[2], 2),
                  "basis": round(ctx["basis"], 1)}
     elif fam == "OPENFADE":
         if ctx.get("basis") is None or win.open_price is None:
