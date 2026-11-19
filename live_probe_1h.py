@@ -60,6 +60,9 @@ GAP_MIN = 0.06            # farm1h fair-05: the FAIR 1h family median gap
 TAU_MIN = 300             # farm1h fair-05: entries only while tau >= 300 s
 BAND = (0.15, 0.92)       # farm1h fair-05 band
 ENTRY_DELAY_S = 60        # farm1h: no fair-anchored entries in the first 60 s
+MAX_WINDOW_USD = 15.00    # per-window spend cap (lizi, 2026-11-19
+                          # ~23:11 JST): filled cost summed over the
+                          # window may not exceed $15
 MIN_RETRY_S = 60          # per-window order count is UNLIMITED (lizi,
                           # 2026-11-19 ~23:03 JST); this cooldown only
                           # stops the loop machine-gunning while one
@@ -382,6 +385,7 @@ def main():
     warmed_slug = None
     last_hb = 0.0
     last_try = 0.0
+    window_spent = 0.0      # filled cost in the current window
     pending_settle = {(o.get("key") or o["slug"]): o for o in ledger.open_orders}
 
     while True:
@@ -421,6 +425,8 @@ def main():
             if win is None or win.start != wstart:
                 win = Window(wstart)
                 last_try = 0.0
+                window_spent = sum(o["filled_cost"] for o in ledger.open_orders
+                                     if o["slug"] == win.slug)
                 try:
                     win.load()
                     print(f"[window] {win.slug} open={win.open_price} min_size={win.min_size} tick={win.tick}", flush=True)
@@ -559,6 +565,8 @@ def main():
                         sig_row["disposition"] = "stopped"
                     elif usd > MAX_ORDER_USD:
                         sig_row["disposition"] = "skipped_min_size"
+                    elif window_spent + usd > MAX_WINDOW_USD:
+                        sig_row["disposition"] = "skipped_window_cap"
                     elif ledger.orders_today >= MAX_ORDERS_DAY or \
                             ledger.spent_today + usd > MAX_SPEND_DAY:
                         sig_row["disposition"] = "skipped_cap"
@@ -602,6 +610,8 @@ def main():
                                             orow["order_detail_error"] = str(e)
                                         time.sleep(2)
                                 orow["filled"] = fshares > 0
+                                if fshares > 0:
+                                    window_spent += orow["filled_cost"]
                                 orow["filled_shares"] = fshares
                                 if fprice:
                                     orow["filled_cost"] = round(fshares * fprice, 4)
