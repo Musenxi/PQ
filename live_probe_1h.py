@@ -66,10 +66,16 @@ Z_SHRINK = 1.35           # calibration correction: the farm fair is
                           # folds (optimize_fair study, 2026-11-19). The
                           # ENTRY GATE uses the corrected fair (lizi,
                           # 2026-11-20 ~00:08 JST); raw fair is still logged.
-MAX_ATTEMPTS_WINDOW = 1   # max submit attempts per window (lizi,
-                          # 2026-11-20 ~00:13 JST; was 3, then 2, now 1)
-                          # 2026-11-20 ~00:09 JST; was 3 for one minute)
-                          # 2026-11-20 ~00:08 JST)
+MAX_FILLS_WINDOW = 1      # the per-window cap counts FILLED orders,
+                          # not submit attempts (lizi, 2026-11-20
+                          # ~18:29 JST: "一单是实际成交的一单" — keep
+                          # monitoring within the window; a killed or
+                          # errored FOK does not spend the window's one
+                          # order). Retries are paced by MIN_RETRY_S and
+                          # each re-evaluates the corrected-gap gate on
+                          # the live book. History: submit-attempt caps
+                          # 3 -> 2 -> 1 (2026-11-20 ~00:08-12:48 JST)
+                          # superseded by this fills-based rule.
 MAX_WINDOW_USD = 15.00    # per-window spend cap (lizi, 2026-11-19
                           # ~23:11 JST): filled cost summed over the
                           # window may not exceed $15
@@ -404,7 +410,7 @@ def main():
     last_hb = 0.0
     last_try = 0.0
     window_spent = 0.0      # filled cost in the current window
-    attempts = 0            # submit attempts in the current window
+    filled_window = False   # a FILLED order already exists this window
     pending_settle = {(o.get("key") or o["slug"]): o for o in ledger.open_orders}
 
     while True:
@@ -448,10 +454,12 @@ def main():
                                      if o["slug"] == win.slug)
                 try:
                     with open(os.path.join(DATA, "orders.jsonl")) as f:
-                        attempts = sum(1 for l in f
-                                       if json.loads(l).get("slug") == win.slug)
+                        filled_window = any(
+                            json.loads(l).get("filled")
+                            for l in f
+                            if json.loads(l).get("slug") == win.slug)
                 except Exception:
-                    attempts = 0
+                    filled_window = False
                 try:
                     win.load()
                     print(f"[window] {win.slug} open={win.open_price} min_size={win.min_size} tick={win.tick}", flush=True)
@@ -555,14 +563,18 @@ def main():
                 print(f"[hb] {win.slug} basis={win.basis:.1f} spot={spot:.1f} fair_up={fair_up:.3f} "
                       f"gap_up={g_up} gap_dn={g_dn} tau={tau:.0f}", flush=True)
 
-            # FAIR decision (fair-05); entries per window capped at
-            # MAX_ATTEMPTS_WINDOW submits (lizi, 2026-11-20 ~00:08 JST;
-            # the 2026-11-19 unlimited rule stacked one window's cap
-            # onto a single bet within minutes). The gate gap uses the
-            # calibration-corrected fair (Z_SHRINK).
+            # FAIR decision (fair-05); per-window cap is MAX_FILLS_WINDOW
+            # FILLED orders (lizi, 2026-11-20 ~18:29 JST): a killed or
+            # errored submit leaves the window open — the loop keeps
+            # monitoring and may submit again after MIN_RETRY_S, each
+            # time re-checking the gate on the live book. (The earlier
+            # submit-attempt caps existed because the 2026-11-19
+            # unlimited rule stacked fills onto one bet within minutes;
+            # counting fills, not attempts, keeps that protection.)
+            # The gate gap uses the calibration-corrected fair (Z_SHRINK).
             if now - win.start >= ENTRY_DELAY_S and tau >= TAU_MIN \
                     and now - last_try >= MIN_RETRY_S \
-                    and attempts < MAX_ATTEMPTS_WINDOW:
+                    and not filled_window:
                 fairs_adj = {s: fair_adj(fairs[s]) for s in fairs}
                 best = None
                 for s in ("Up", "Down"):
@@ -605,7 +617,6 @@ def main():
                         sig_row["disposition"] = "dry"
                     else:
                         sig_row["disposition"] = "submit"
-                        attempts += 1
                         orow = dict(sig_row)
                         try:
                             resp, lat_ms = post_fok_buy(client, win.token[side], ask, shares)
@@ -643,6 +654,7 @@ def main():
                                         time.sleep(2)
                                 orow["filled"] = fshares > 0
                                 if fshares > 0:
+                                    filled_window = True
                                     window_spent += orow["filled_cost"]
                                 orow["filled_shares"] = fshares
                                 if fprice:
