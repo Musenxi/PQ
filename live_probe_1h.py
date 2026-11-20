@@ -79,11 +79,12 @@ MAX_FILLS_WINDOW = 1      # the per-window cap counts FILLED orders,
 MAX_WINDOW_USD = 15.00    # per-window spend cap (lizi, 2026-11-19
                           # ~23:11 JST): filled cost summed over the
                           # window may not exceed $15
-MIN_RETRY_S = 60          # per-window order count is UNLIMITED (lizi,
-                          # 2026-11-19 ~23:03 JST); this cooldown only
-                          # stops the loop machine-gunning while one
-                          # signal persists. Per-order $5 cap and the
-                          # balance bound are unchanged.
+MIN_RETRY_S = 60          # pacing after non-submit dispositions.
+                          # Since 2026-11-21 ~01:06 JST (lizi) it no
+                          # longer applies to FAILED submits: a killed
+                          # or errored FOK may be retried on the next
+                          # loop tick. Per-order $5 cap and the balance
+                          # bound are unchanged.
 STALE_BOOK_MS = 1000
 FUTURE_BOOK_MS = -2000
 
@@ -603,6 +604,7 @@ def main():
                         bumped = True
                     usd = round(shares * ask, 4)
                     sig_row.update({"shares": shares, "usd": usd, "min_bumped": bumped})
+                    attempt_failed = False
                     stopped = os.path.exists(os.path.join(HERE, "STOP"))
                     if stopped:
                         sig_row["disposition"] = "stopped"
@@ -682,12 +684,18 @@ def main():
                             ledger.orders_today += 1
                             print(f"[order] ERROR {win.slug} {side}: {e}", flush=True)
                         append_jsonl("orders.jsonl", orow)
+                        attempt_failed = not orow.get("filled")
                         ledger.save()
                     append_jsonl("signals.jsonl", sig_row)
-                    # every disposition starts the cooldown; after
-                    # MIN_RETRY_S a fresh signal in the same window
-                    # may fire again (unlimited entries per window)
-                    last_try = now
+                    # A FAILED submit (FOK killed / rejected / errored)
+                    # starts NO cooldown (lizi, 2026-11-21 ~01:06 JST:
+                    # the 60 s retry limit on failed orders is
+                    # cancelled) — the next loop tick re-evaluates the
+                    # gate on the live book and may resubmit at once.
+                    # Other dispositions keep the MIN_RETRY_S pacing; a
+                    # fill closes the window via filled_window anyway.
+                    if not attempt_failed:
+                        last_try = now
                     ledger.save()
             time.sleep(2)
         except KeyboardInterrupt:
