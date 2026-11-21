@@ -63,6 +63,48 @@ def fam_stats(data_dir):
     return agg
 
 
+def acct_stats(data_dir):
+    """account -> (windows, total_pnl)."""
+    rows = read_jsonl(os.path.join(data_dir, "settlements.jsonl"))
+    win = defaultdict(float)
+    for r in rows:
+        win[(r["account"], r["slug"])] += float(r.get("pnl", 0))
+    agg = defaultdict(lambda: [0, 0.0])
+    for (aid, slug), v in win.items():
+        agg[aid][0] += 1
+        agg[aid][1] += v
+    return agg
+
+
+def farm_section(data_dir, order):
+    """Family lines with EVERY configured account listed under its
+    family (lizi, 2026-11-21: write out each account, including
+    zero-activity ones, so idle families stay visible)."""
+    agg = fam_stats(data_dir)
+    accts = acct_stats(data_dir)
+    try:
+        st = json.load(open(os.path.join(data_dir, "state.json")))
+        universe = sorted(st["accounts"].keys())
+    except OSError:
+        universe = sorted(accts.keys())
+    out = []
+    for fam in order:
+        members = [a for a in universe
+                   if a.split("-")[0].upper() == fam]
+        if not members:
+            continue
+        w, tot = agg.get(fam, [0, 0.0])
+        line = "· " + fam + "\uff1a" + str(w) + " \u7a97 \u00b7 \u5408\u8ba1 " + fmt(tot)
+        if w:
+            line += " \u00b7 \u5747\u503c " + fmt(tot / w) + "/\u7a97"
+        out.append(line)
+        for aid in members:
+            aw, atot = accts.get(aid, [0, 0.0])
+            out.append("\u3000\u00b7 " + aid + "\uff1a" + str(aw)
+                       + " \u7a97 \u00b7 " + fmt(atot))
+    return out
+
+
 def mval_split():
     """MVAL decomposition: locked-pair pnl vs residual directional pnl,
     over settled (account, window) pairs. Pairs are worth exactly $1
@@ -106,31 +148,23 @@ def fmt(x):
 
 def build_report():
     now = datetime.now(JST).strftime("%m-%d %H:%M")
-    agg = fam_stats(FARM)
-    order = ["FAIR", "MVAL", "ACVR", "MOM", "OPENFADE", "REV", "SNIPE"]
-    lines = ["📊 模拟盘十分钟报（" + now + " JST）", "新农场·甜点带0.60-0.75（官方结算口径）："]
-    for fam in order:
-        if fam in agg:
-            w, tot = agg[fam]
-            lines.append("· " + fam + "：" + str(w) + " 窗 · 合计 " + fmt(tot)
-                         + " · 均值 " + fmt(tot / w) + "/窗")
+    lines = ["\U0001F4CA \u6a21\u62df\u76d8\u5341\u5206\u949f\u62a5\uff08" + now + " JST\uff09",
+             "\u65b0\u519c\u573a\u00b7\u751c\u70b9\u5e260.60-0.75\uff08\u5b98\u65b9\u7ed3\u7b97\u53e3\u5f84\uff09\uff1a"]
+    lines += farm_section(FARM, ["FAIR", "MVAL", "ACVR", "MOM",
+                                 "OPENFADE", "REV", "SNIPE"])
     n, tot, locked, resid, pairs = mval_split()
     if n:
-        lines.append("MVAL 明细：已结算 " + str(n) + " 窗 · 锁定对子 " + fmt(locked)
-                     + "（" + str(pairs) + " 窗成对）· 残余方向 " + fmt(resid)
-                     + " · 合计 " + fmt(tot))
-    agg1 = fam_stats(FARM1H)
-    if "BAND" in agg1:
-        w, tot = agg1["BAND"]
-        lines.append("1h 甜点带克隆 band-01：" + str(w) + " 窗 · 合计 "
-                     + fmt(tot))
-    if "FAIR" in agg1:
-        w, tot = agg1["FAIR"]
-        lines.append("1h 探针：FAIR " + str(w) + " 窗 · 合计 " + fmt(tot))
+        lines.append("MVAL \u660e\u7ec6\uff1a\u5df2\u7ed3\u7b97 " + str(n)
+                     + " \u7a97 \u00b7 \u9501\u5b9a\u5bf9\u5b50 " + fmt(locked)
+                     + "\uff08" + str(pairs) + " \u7a97\u6210\u5bf9\uff09\u00b7 \u6b8b\u4f59\u65b9\u5411 "
+                     + fmt(resid) + " \u00b7 \u5408\u8ba1 " + fmt(tot))
+    lines.append("1h \u519c\u573a\uff08\u5b98\u65b9\u7ed3\u7b97\u53e3\u5f84\uff09\uff1a")
+    lines += farm_section(FARM1H, ["FAIR", "BAND", "LATE"])
     try:
         st = json.load(open(os.path.join(FARM, "state.json")))
         alive = sum(1 for a in st["accounts"].values() if a.get("alive"))
-        lines.append("存活账户 " + str(alive) + "/" + str(len(st["accounts"])))
+        lines.append("\u5b58\u6d3b\u8d26\u6237 " + str(alive) + "/"
+                     + str(len(st["accounts"])))
     except OSError:
         pass
     return "\n".join(lines)
