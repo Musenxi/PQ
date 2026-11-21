@@ -221,8 +221,18 @@ def build_configs():
     # three-cut consensus band was 0.60-0.75 all along). The clone's
     # pre-narrowing sample was <=2 windows, so the frozen read clock
     # restarts from the 2026-11-21 21:00 JST window; all other terms
+    # ALIGNMENT CHANGE 2026-11-22 ~01:30 JST at lizi's instruction
+    # (paper and live must at minimum agree on DIRECTION): band-01
+    # now gates on the calibration-CORRECTED fair (z/1.35, the
+    # live probe's exact gate) instead of the raw fair. This is
+    # another config break: band-01's earlier samples (raw gate,
+    # either band) are excluded, and its read clock restarts from
+    # the first full window after this change. The paired read
+    # now tests the probe's full config package (band + corrected
+    # gate) against raw fair-05, not the band alone.
     # unchanged.
     cfgs.append({"id": "band-01", "family": "BAND", "gap": 0.06,
+                 "corrected": True,
                  "tau_min": 300, "band": (0.60, 0.75)})
     # LATE (added 2026-11-19 at lizi's instruction): cross-window /
     # late-hour certainty. Only in the last tau_max seconds of the
@@ -718,18 +728,19 @@ def account_tick(a, win, ctx):
             return
         if tau < cfg["tau_min"]:
             return
+        fairs = ctx["fairs_adj"] if cfg.get("corrected") else ctx["fairs"]
         best_gap = None
         for s in ("Up", "Down"):
             ask = books[s][1][0]
             if ask is None or not (cfg["band"][0] <= ask <= cfg["band"][1]):
                 continue
-            gap = ctx["fairs"][s] - ask
+            gap = fairs[s] - ask
             if best_gap is None or gap > best_gap[0]:
                 best_gap = (gap, s)
         if not best_gap or best_gap[0] < cfg["gap"]:
             return
         side = best_gap[1]
-        extra = {"gap": round(best_gap[0], 3), "fair": round(ctx["fairs"][side], 3),
+        extra = {"gap": round(best_gap[0], 3), "fair": round(fairs[side], 3),
                  "basis": round(ctx["basis"], 1)}
     elif fam == "LATE":
         if ctx.get("basis") is None or ctx["now"] - win.start < ENTRY_DELAY_S:
@@ -1019,6 +1030,7 @@ def main():
                     var_f = tau ** 3 / (3.0 * 60.0 * 60.0)
                 z = math.log(exp_twap / win.open_price) / (sigma * math.sqrt(max(var_f, 1e-6)))
                 fair_up = min(max(norm_cdf(z), 0.001), 0.999)
+                fair_adj_up = min(max(norm_cdf(z / 1.35), 0.001), 0.999)
 
             books = {}
             levels = {}
@@ -1069,6 +1081,7 @@ def main():
             ctx = {"now": now, "tau": tau, "spot": spot, "slug": win.slug,
                    "basis": win.basis,
                    "fairs": {"Up": fair_up, "Down": (1.0 - fair_up) if fair_up is not None else None},
+                   "fairs_adj": {"Up": fair_adj_up, "Down": (1.0 - fair_adj_up) if fair_adj_up is not None else None},
                    "books": books, "levels": levels, "book_meta": book_meta,
                    "moves": moves,
                    "jump20": moves[20] or 0.0,
