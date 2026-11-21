@@ -205,6 +205,19 @@ def build_configs():
                 n += 1
                 cfgs.append({"id": f"fair-{n:02d}", "family": "FAIR", "gap": gap,
                              "tau_min": tau_min, "band": band})
+    # BAND (added 2026-11-21 at lizi's instruction): paired clone of
+    # fair-05 with ONLY the entry band narrowed to the 0.55-0.75
+    # sweet band (fair-05's paper profit concentration + the 5m
+    # market/entry calibration curves agree the soft zone is
+    # ~0.60-0.75). Runs the FAIR logic on the same windows as fair-05
+    # so the read is a paired per-window diff, which cancels regime
+    # and fill-model bias. PRE-REGISTERED READ (frozen 2026-11-21):
+    # >=60 band-01 windows AND >=7 days; paired diff (band-01 minus
+    # fair-05 per-window PnL) block-bootstrap 95% CI must exclude 0
+    # on the positive side AND band-01 post-fee PnL > 0, else the
+    # band rule is rejected and not re-sliced.
+    cfgs.append({"id": "band-01", "family": "BAND", "gap": 0.06,
+                 "tau_min": 300, "band": (0.55, 0.75)})
     # LATE (added 2026-11-19 at lizi's instruction): cross-window /
     # late-hour certainty. Only in the last tau_max seconds of the
     # hour, only on the side whose TWAP path margin is already
@@ -694,7 +707,7 @@ def account_tick(a, win, ctx):
         if fam == "REV":
             side = "Down" if side == "Up" else "Up"
         extra = {"move": round(mv, 1), "lookback": cfg["lookback"]}
-    elif fam == "FAIR":
+    elif fam in ("FAIR", "BAND"):
         if ctx.get("basis") is None or ctx["now"] - win.start < ENTRY_DELAY_S:
             return
         if tau < cfg["tau_min"]:
