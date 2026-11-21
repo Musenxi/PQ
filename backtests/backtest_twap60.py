@@ -26,6 +26,8 @@ Fill variants: (i) trigger snapshot's ask (optimistic);
 2026-11-20 23:59 UTC, 0.05 after. Stdlib only; runs on Azure.
 """
 import bisect
+import glob as _glob
+import gzip
 import json
 import math
 import os
@@ -34,6 +36,14 @@ import time
 import urllib.request
 
 REC = "/root/polymarket-recorder/data"
+
+
+def open_rec(kind, day):
+    """Recorder files are gzipped after 2 days; open either form."""
+    plain = os.path.join(REC, f"{kind}-{day}.jsonl")
+    if os.path.exists(plain):
+        return open(plain)
+    return gzip.open(plain + ".gz", "rt")
 HERE = os.path.dirname(os.path.abspath(__file__))
 UA = {"User-Agent": "Mozilla/5.0"}
 FEE_FLIP = 1795219140  # 2026-11-20 23:59 UTC
@@ -49,10 +59,11 @@ def phi(x):
 def load_binance(days):
     ts, px = [], []
     for d in days:
-        p = os.path.join(REC, f"binance-{d}.jsonl")
-        if not os.path.exists(p):
+        try:
+            f = open_rec("binance", d)
+        except FileNotFoundError:
             continue
-        with open(p) as f:
+        with f:
             for line in f:
                 r = json.loads(line)
                 ts.append(float(r["ts"]))
@@ -70,10 +81,11 @@ def load_snapshots(days):
     """(slug, outcome) -> sorted [(recv, ask, asks_ladder)] for tau in [0, 65]."""
     out = {}
     for d in days:
-        p = os.path.join(REC, f"clob-{d}.jsonl")
-        if not os.path.exists(p):
+        try:
+            f = open_rec("clob", d)
+        except FileNotFoundError:
             continue
-        with open(p) as f:
+        with f:
             for line in f:
                 if '"asks"' not in line:
                     continue
@@ -100,10 +112,11 @@ def load_twap_end(days):
     """slug -> twap_sixty value at window end (settlement series check)."""
     pts = []
     for d in days:
-        p = os.path.join(REC, f"rtds-{d}.jsonl")
-        if not os.path.exists(p):
+        try:
+            f = open_rec("rtds", d)
+        except FileNotFoundError:
             continue
-        with open(p) as f:
+        with f:
             for line in f:
                 if "twap_sixty" not in line:
                     continue
@@ -169,9 +182,9 @@ def sigma_at(ts, px, t):
 
 
 def main():
-    import glob as _glob
-    days = sorted({os.path.basename(p)[8:-6]
-                   for p in _glob.glob(os.path.join(REC, "binance-*.jsonl"))})
+    days = sorted({os.path.basename(p)[8:].removesuffix(".jsonl.gz")
+                   .removesuffix(".jsonl")
+                   for p in _glob.glob(os.path.join(REC, "binance-*.jsonl*"))})
     print(f"days: {days}", flush=True)
     print("loading binance prints...", flush=True)
     bts, bpx = load_binance(days)
