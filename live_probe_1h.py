@@ -11,7 +11,7 @@ thin 1h book (fill rate, slippage, quote survival) with $1.50
 orders capped at $5 -- NOT a strategy validation or deployment.
 
 Signal: farm1h FAIR, config fair-05 (gap >= 0.06, tau_min 300,
-band [0.15, 0.92] -- the family median gap), pre-open basis
+band [0.55, 0.75] since 2026-11-21 (sweet band; was [0.15, 0.92]), pre-open basis
 averaged over <=8 prior windows, TWAP-aware fair, no entries in
 the first 60 s of a window, at most one order per window.
 Settlement ONLY from Gamma's official resolution (same code as
@@ -58,7 +58,10 @@ MAX_ORDERS_DAY = 1000000  # count cap removed at lizi instruction 2026-11-19; sp
 MAX_SPEND_DAY = 1000000.0  # daily spend cap removed at lizi instruction 2026-11-19 ~18:59 JST; per-order $5 cap and the account balance remain the bounds
 GAP_MIN = 0.06            # farm1h fair-05: the FAIR 1h family median gap
 TAU_MIN = 300             # farm1h fair-05: entries only while tau >= 300 s
-BAND = (0.15, 0.92)       # farm1h fair-05 band
+BAND = (0.55, 0.75)       # SWEET BAND (0.55-0.75) added 2026-11-21 ~18:55 JST at lizi's
+                          # instruction; was farm1h fair-05 band (0.15, 0.92).
+                          # Config break: probe tallies before/after this line are
+                          # separate segments, do not pool.
 ENTRY_DELAY_S = 60        # farm1h: no fair-anchored entries in the first 60 s
 Z_SHRINK = 1.35           # calibration correction: the farm fair is
                           # systematically overconfident; z / 1.35 improved
