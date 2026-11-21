@@ -76,35 +76,6 @@ def acct_stats(data_dir):
     return agg
 
 
-def farm_section(data_dir, order):
-    """Family lines with EVERY configured account listed under its
-    family (lizi, 2026-11-21: write out each account, including
-    zero-activity ones, so idle families stay visible)."""
-    agg = fam_stats(data_dir)
-    accts = acct_stats(data_dir)
-    try:
-        st = json.load(open(os.path.join(data_dir, "state.json")))
-        universe = sorted(st["accounts"].keys())
-    except OSError:
-        universe = sorted(accts.keys())
-    out = []
-    for fam in order:
-        members = [a for a in universe
-                   if a.split("-")[0].upper() == fam]
-        if not members:
-            continue
-        w, tot = agg.get(fam, [0, 0.0])
-        line = "· " + fam + "\uff1a" + str(w) + " \u7a97 \u00b7 \u5408\u8ba1 " + fmt(tot)
-        if w:
-            line += " \u00b7 \u5747\u503c " + fmt(tot / w) + "/\u7a97"
-        out.append(line)
-        for aid in members:
-            aw, atot = accts.get(aid, [0, 0.0])
-            out.append("\u3000\u00b7 " + aid + "\uff1a" + str(aw)
-                       + " \u7a97 \u00b7 " + fmt(atot))
-    return out
-
-
 def mval_split():
     """MVAL decomposition: locked-pair pnl vs residual directional pnl,
     over settled (account, window) pairs. Pairs are worth exactly $1
@@ -146,27 +117,96 @@ def fmt(x):
     return ("+" if x >= 0 else "-") + format(abs(x), ",.2f")
 
 
-def build_report():
+
+
+PREV_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                         "tg_prev.json")
+
+
+def load_prev():
+    try:
+        return json.load(open(PREV_PATH))
+    except (OSError, ValueError):
+        return {}
+
+
+def farm_section(data_dir, order, prev):
+    """Family lines with EVERY configured account listed under its
+    family (lizi, 2026-11-21: write out each account, including
+    zero-activity ones, so idle families stay visible). Lines carry
+    a delta vs the previous report (lizi, 2026-11-21). Returns
+    (lines, current fam stats, current acct stats)."""
+    agg = fam_stats(data_dir)
+    accts = acct_stats(data_dir)
+    pfam = prev.get("fam", {}).get(data_dir, {})
+    pacct = prev.get("acct", {}).get(data_dir, {})
+    try:
+        st = json.load(open(os.path.join(data_dir, "state.json")))
+        universe = sorted(st["accounts"].keys())
+    except OSError:
+        universe = sorted(accts.keys())
+
+    def delta(w, tot, pw, ptot):
+        dw = w - pw
+        dp = round(tot - ptot, 2)
+        if dw == 0 and dp == 0:
+            return ""
+        return " · \u0394 " + format(dw, "+d") + "\u7a97 " + fmt(dp)
+
+    out = []
+    for fam in order:
+        members = [a for a in universe
+                   if a.split("-")[0].upper() == fam]
+        if not members:
+            continue
+        w, tot = agg.get(fam, [0, 0.0])
+        pw, ptot = pfam.get(fam, [0, 0.0])
+        line = "· " + fam + "：" + str(w) + " 窗 · 合计 " + fmt(tot)
+        if w:
+            line += " · 均值 " + fmt(tot / w) + "/窗"
+        line += delta(w, tot, pw, ptot)
+        out.append(line)
+        for aid in members:
+            aw, atot = accts.get(aid, [0, 0.0])
+            paw, patot = pacct.get(aid, [0, 0.0])
+            out.append("　· " + aid + "：" + str(aw) + " 窗 · "
+                       + fmt(atot) + delta(aw, atot, paw, patot))
+    cur = {"fam": {k: list(v) for k, v in agg.items()},
+           "acct": {k: list(v) for k, v in accts.items()}}
+    return out, cur
+
+
+def build_report(update_prev=True):
     now = datetime.now(JST).strftime("%m-%d %H:%M")
-    lines = ["\U0001F4CA \u6a21\u62df\u76d8\u5341\u5206\u949f\u62a5\uff08" + now + " JST\uff09",
-             "\u65b0\u519c\u573a\u00b7\u751c\u70b9\u5e260.60-0.75\uff08\u5b98\u65b9\u7ed3\u7b97\u53e3\u5f84\uff09\uff1a"]
-    lines += farm_section(FARM, ["FAIR", "MVAL", "ACVR", "MOM",
-                                 "OPENFADE", "REV", "SNIPE"])
+    prev = load_prev()
+    lines = ["📊 模拟盘十分钟报（" + now + " JST）",
+             "新农场·甜点带0.60-0.75（官方结算口径）："]
+    sec, cur2 = farm_section(FARM, ["FAIR", "MVAL", "ACVR", "MOM",
+                                    "OPENFADE", "REV", "SNIPE"], prev)
+    lines += sec
     n, tot, locked, resid, pairs = mval_split()
     if n:
-        lines.append("MVAL \u660e\u7ec6\uff1a\u5df2\u7ed3\u7b97 " + str(n)
-                     + " \u7a97 \u00b7 \u9501\u5b9a\u5bf9\u5b50 " + fmt(locked)
-                     + "\uff08" + str(pairs) + " \u7a97\u6210\u5bf9\uff09\u00b7 \u6b8b\u4f59\u65b9\u5411 "
-                     + fmt(resid) + " \u00b7 \u5408\u8ba1 " + fmt(tot))
-    lines.append("1h \u519c\u573a\uff08\u5b98\u65b9\u7ed3\u7b97\u53e3\u5f84\uff09\uff1a")
-    lines += farm_section(FARM1H, ["FAIR", "BAND", "LATE"])
+        lines.append("MVAL 明细：已结算 " + str(n) + " 窗 · 锁定对子 "
+                     + fmt(locked) + "（" + str(pairs) + " 窗成对）· 残余方向 "
+                     + fmt(resid) + " · 合计 " + fmt(tot))
+    lines.append("1h 农场（官方结算口径）：")
+    sec, cur1 = farm_section(FARM1H, ["FAIR", "BAND", "LATE"], prev)
+    lines += sec
     try:
         st = json.load(open(os.path.join(FARM, "state.json")))
         alive = sum(1 for a in st["accounts"].values() if a.get("alive"))
-        lines.append("\u5b58\u6d3b\u8d26\u6237 " + str(alive) + "/"
+        lines.append("存活账户 " + str(alive) + "/"
                      + str(len(st["accounts"])))
     except OSError:
         pass
+    if update_prev:
+        nxt = {"fam": {FARM: cur2["fam"], FARM1H: cur1["fam"]},
+               "acct": {FARM: cur2["acct"], FARM1H: cur1["acct"]}}
+        try:
+            with open(PREV_PATH, "w") as f:
+                json.dump(nxt, f)
+        except OSError:
+            pass
     return "\n".join(lines)
 
 
