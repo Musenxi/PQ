@@ -1,6 +1,6 @@
 import pandas as pd, numpy as np
 D='/home/user/PQ/data/2026-11-22/'
-FEECUT=1795305540
+FEECUT=1795219140  # 2026-11-20 23:59 UTC (verified from fee column; load.py uses 1795305540 = one day late)
 S2CUT=1795255200; S3CUT=1795262400
 def rd(p): return pd.read_json(D+p, lines=True, convert_dates=False)
 def tsec(col): return (pd.to_datetime(col,utc=True,format='ISO8601')-pd.Timestamp('1970-01-01',tz='UTC')).dt.total_seconds()
