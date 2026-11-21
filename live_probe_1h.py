@@ -58,14 +58,16 @@ MAX_ORDERS_DAY = 1000000  # count cap removed at lizi instruction 2026-11-19; sp
 MAX_SPEND_DAY = 1000000.0  # daily spend cap removed at lizi instruction 2026-11-19 ~18:59 JST; per-order $5 cap and the account balance remain the bounds
 GAP_MIN = 0.06            # farm1h fair-05: the FAIR 1h family median gap
 TAU_MIN = 300             # farm1h fair-05: entries only while tau >= 300 s
-BAND = (0.60, 0.75)       # SWEET BAND (0.55-0.75) added 2026-11-21 ~18:55 JST at lizi's
-                          # instruction; was farm1h fair-05 band (0.15, 0.92).
-                          # Config break: probe tallies before/after this line are
-                          # separate segments, do not pool.
-                          # 2026-11-21 ~20:17 JST: narrowed to (0.60, 0.75) at lizi's
-                          # instruction (probe 0.55-0.60 live slice: 3 fills, 1 win).
-                          # Segment 3 starts with the 21:00 JST window; segment 2
-                          # (0.55-0.75) ran 19:00-21:00 JST only.
+BAND = (0.15, 0.92)       # 2026-11-22 ~01:40 JST: probe switched to the
+                          # PAPER fair-05 config verbatim at lizi's
+                          # instruction ("换成纸面策略"): raw-fair gate
+                          # (see the gate block) + full band (0.15, 0.92).
+                          # Config break: SEGMENT 4 starts with the
+                          # 2026-11-22 02:00 JST window; do not pool with
+                          # segments 1-3. History: S1 full band + corrected
+                          # gate to 2026-11-21 19:00 JST; S2 band
+                          # (0.55, 0.75) 19:00-21:00 JST; S3 band
+                          # (0.60, 0.75) from 21:00 JST.
 ENTRY_DELAY_S = 60        # farm1h: no fair-anchored entries in the first 60 s
 Z_SHRINK = 1.35           # calibration correction: the farm fair is
                           # systematically overconfident; z / 1.35 improved
@@ -73,6 +75,9 @@ Z_SHRINK = 1.35           # calibration correction: the farm fair is
                           # folds (optimize_fair study, 2026-11-19). The
                           # ENTRY GATE uses the corrected fair (lizi,
                           # 2026-11-20 ~00:08 JST); raw fair is still logged.
+                          # 2026-11-22 ~01:40 JST: the gate switched to the
+                          # RAW fair (probe = paper fair-05 verbatim);
+                          # Z_SHRINK is no longer applied to the gate.
 MAX_FILLS_WINDOW = 1      # the per-window cap counts FILLED orders,
                           # not submit attempts (lizi, 2026-11-20
                           # ~18:29 JST: "一单是实际成交的一单" — keep
@@ -579,11 +584,13 @@ def main():
             # submit-attempt caps existed because the 2026-11-19
             # unlimited rule stacked fills onto one bet within minutes;
             # counting fills, not attempts, keeps that protection.)
-            # The gate gap uses the calibration-corrected fair (Z_SHRINK).
+            # The gate gap uses the RAW fair (the paper fair-05 config
+            # verbatim since 2026-11-22 ~01:40 JST; before that it used
+            # the calibration-corrected fair, Z_SHRINK).
             if now - win.start >= ENTRY_DELAY_S and tau >= TAU_MIN \
                     and now - last_try >= MIN_RETRY_S \
                     and not filled_window:
-                fairs_adj = {s: fair_adj(fairs[s]) for s in fairs}
+                fairs_adj = dict(fairs)
                 best = None
                 for s in ("Up", "Down"):
                     if s not in books:

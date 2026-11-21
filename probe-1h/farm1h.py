@@ -221,6 +221,10 @@ def build_configs():
     # three-cut consensus band was 0.60-0.75 all along). The clone's
     # pre-narrowing sample was <=2 windows, so the frozen read clock
     # restarts from the 2026-11-21 21:00 JST window; all other terms
+    # SUPERSEDED same night ~01:40 JST: the probe itself switched to
+    # the paper fair-05 config (raw gate), so band-01's corrected gate
+    # was reverted the same hour -- band-01 is again the band-only
+    # clone of fair-05, and its gate once more matches the probe's.
     # ALIGNMENT CHANGE 2026-11-22 ~01:30 JST at lizi's instruction
     # (paper and live must at minimum agree on DIRECTION): band-01
     # now gates on the calibration-CORRECTED fair (z/1.35, the
@@ -232,7 +236,6 @@ def build_configs():
     # gate) against raw fair-05, not the band alone.
     # unchanged.
     cfgs.append({"id": "band-01", "family": "BAND", "gap": 0.06,
-                 "corrected": True,
                  "tau_min": 300, "band": (0.60, 0.75)})
     # LATE (added 2026-11-19 at lizi's instruction): cross-window /
     # late-hour certainty. Only in the last tau_max seconds of the
