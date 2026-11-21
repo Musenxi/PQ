@@ -1,0 +1,54 @@
+[
+ {
+  "id": "swing-01",
+  "family": "SWING",
+  "gap": 0.06,
+  "tau_min": 300,
+  "band": [
+   0.15,
+   0.92
+  ],
+  "exit_kind": "fair",
+  "exit_par": 0.0,
+  "max_entries": 3
+ },
+ {
+  "id": "swing-02",
+  "family": "SWING",
+  "gap": 0.06,
+  "tau_min": 300,
+  "band": [
+   0.15,
+   0.92
+  ],
+  "exit_kind": "fair",
+  "exit_par": 0.03,
+  "max_entries": 3
+ },
+ {
+  "id": "swing-03",
+  "family": "SWING",
+  "gap": 0.06,
+  "tau_min": 300,
+  "band": [
+   0.15,
+   0.92
+  ],
+  "exit_kind": "tp",
+  "exit_par": 0.1,
+  "max_entries": 3
+ },
+ {
+  "id": "swing-04",
+  "family": "SWING",
+  "gap": 0.06,
+  "tau_min": 300,
+  "band": [
+   0.15,
+   0.92
+  ],
+  "exit_kind": "tp",
+  "exit_par": 0.2,
+  "max_entries": 3
+ }
+]

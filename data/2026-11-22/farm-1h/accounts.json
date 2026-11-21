@@ -1,0 +1,122 @@
+[
+ {
+  "id": "fair-01",
+  "family": "FAIR",
+  "gap": 0.03,
+  "tau_min": 300,
+  "band": [
+   0.15,
+   0.92
+  ]
+ },
+ {
+  "id": "fair-02",
+  "family": "FAIR",
+  "gap": 0.03,
+  "tau_min": 300,
+  "band": [
+   0.3,
+   0.8
+  ]
+ },
+ {
+  "id": "fair-03",
+  "family": "FAIR",
+  "gap": 0.03,
+  "tau_min": 900,
+  "band": [
+   0.15,
+   0.92
+  ]
+ },
+ {
+  "id": "fair-04",
+  "family": "FAIR",
+  "gap": 0.03,
+  "tau_min": 900,
+  "band": [
+   0.3,
+   0.8
+  ]
+ },
+ {
+  "id": "fair-05",
+  "family": "FAIR",
+  "gap": 0.06,
+  "tau_min": 300,
+  "band": [
+   0.15,
+   0.92
+  ]
+ },
+ {
+  "id": "fair-06",
+  "family": "FAIR",
+  "gap": 0.06,
+  "tau_min": 300,
+  "band": [
+   0.3,
+   0.8
+  ]
+ },
+ {
+  "id": "fair-07",
+  "family": "FAIR",
+  "gap": 0.06,
+  "tau_min": 900,
+  "band": [
+   0.15,
+   0.92
+  ]
+ },
+ {
+  "id": "fair-08",
+  "family": "FAIR",
+  "gap": 0.06,
+  "tau_min": 900,
+  "band": [
+   0.3,
+   0.8
+  ]
+ },
+ {
+  "id": "fair-09",
+  "family": "FAIR",
+  "gap": 0.1,
+  "tau_min": 300,
+  "band": [
+   0.15,
+   0.92
+  ]
+ },
+ {
+  "id": "fair-10",
+  "family": "FAIR",
+  "gap": 0.1,
+  "tau_min": 300,
+  "band": [
+   0.3,
+   0.8
+  ]
+ },
+ {
+  "id": "fair-11",
+  "family": "FAIR",
+  "gap": 0.1,
+  "tau_min": 900,
+  "band": [
+   0.15,
+   0.92
+  ]
+ },
+ {
+  "id": "fair-12",
+  "family": "FAIR",
+  "gap": 0.1,
+  "tau_min": 900,
+  "band": [
+   0.3,
+   0.8
+  ]
+ }
+]

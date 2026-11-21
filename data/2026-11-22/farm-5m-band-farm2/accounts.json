@@ -1,0 +1,350 @@
+[
+ {
+  "id": "mom-01",
+  "family": "MOM",
+  "lookback": 10,
+  "thr": 20.0,
+  "band": [
+   0.6,
+   0.75
+  ],
+  "tau_lo": 30,
+  "tau_hi": 240
+ },
+ {
+  "id": "mom-02",
+  "family": "MOM",
+  "lookback": 10,
+  "thr": 40.0,
+  "band": [
+   0.6,
+   0.75
+  ],
+  "tau_lo": 30,
+  "tau_hi": 240
+ },
+ {
+  "id": "mom-03",
+  "family": "MOM",
+  "lookback": 30,
+  "thr": 20.0,
+  "band": [
+   0.6,
+   0.75
+  ],
+  "tau_lo": 30,
+  "tau_hi": 240
+ },
+ {
+  "id": "mom-04",
+  "family": "MOM",
+  "lookback": 30,
+  "thr": 40.0,
+  "band": [
+   0.6,
+   0.75
+  ],
+  "tau_lo": 30,
+  "tau_hi": 240
+ },
+ {
+  "id": "mom-05",
+  "family": "MOM",
+  "lookback": 60,
+  "thr": 20.0,
+  "band": [
+   0.6,
+   0.75
+  ],
+  "tau_lo": 30,
+  "tau_hi": 240
+ },
+ {
+  "id": "mom-06",
+  "family": "MOM",
+  "lookback": 60,
+  "thr": 40.0,
+  "band": [
+   0.6,
+   0.75
+  ],
+  "tau_lo": 30,
+  "tau_hi": 240
+ },
+ {
+  "id": "rev-01",
+  "family": "REV",
+  "lookback": 10,
+  "thr": 20.0,
+  "band": [
+   0.6,
+   0.75
+  ],
+  "tau_lo": 30,
+  "tau_hi": 240
+ },
+ {
+  "id": "rev-02",
+  "family": "REV",
+  "lookback": 10,
+  "thr": 40.0,
+  "band": [
+   0.6,
+   0.75
+  ],
+  "tau_lo": 30,
+  "tau_hi": 240
+ },
+ {
+  "id": "rev-03",
+  "family": "REV",
+  "lookback": 30,
+  "thr": 20.0,
+  "band": [
+   0.6,
+   0.75
+  ],
+  "tau_lo": 30,
+  "tau_hi": 240
+ },
+ {
+  "id": "rev-04",
+  "family": "REV",
+  "lookback": 30,
+  "thr": 40.0,
+  "band": [
+   0.6,
+   0.75
+  ],
+  "tau_lo": 30,
+  "tau_hi": 240
+ },
+ {
+  "id": "rev-05",
+  "family": "REV",
+  "lookback": 60,
+  "thr": 20.0,
+  "band": [
+   0.6,
+   0.75
+  ],
+  "tau_lo": 30,
+  "tau_hi": 240
+ },
+ {
+  "id": "rev-06",
+  "family": "REV",
+  "lookback": 60,
+  "thr": 40.0,
+  "band": [
+   0.6,
+   0.75
+  ],
+  "tau_lo": 30,
+  "tau_hi": 240
+ },
+ {
+  "id": "fair-01",
+  "family": "FAIR",
+  "gap": 0.05,
+  "tau_min": 30,
+  "band": [
+   0.6,
+   0.75
+  ]
+ },
+ {
+  "id": "fair-02",
+  "family": "FAIR",
+  "gap": 0.05,
+  "tau_min": 60,
+  "band": [
+   0.6,
+   0.75
+  ]
+ },
+ {
+  "id": "fair-03",
+  "family": "FAIR",
+  "gap": 0.08,
+  "tau_min": 30,
+  "band": [
+   0.6,
+   0.75
+  ]
+ },
+ {
+  "id": "fair-04",
+  "family": "FAIR",
+  "gap": 0.08,
+  "tau_min": 60,
+  "band": [
+   0.6,
+   0.75
+  ]
+ },
+ {
+  "id": "fair-05",
+  "family": "FAIR",
+  "gap": 0.12,
+  "tau_min": 30,
+  "band": [
+   0.6,
+   0.75
+  ]
+ },
+ {
+  "id": "fair-06",
+  "family": "FAIR",
+  "gap": 0.12,
+  "tau_min": 60,
+  "band": [
+   0.6,
+   0.75
+  ]
+ },
+ {
+  "id": "acvr-01",
+  "family": "ACVR",
+  "thr": 0.02,
+  "branch": "mom",
+  "tau_lo": 30,
+  "tau_hi": 150,
+  "band": [
+   0.6,
+   0.75
+  ]
+ },
+ {
+  "id": "acvr-02",
+  "family": "ACVR",
+  "thr": 0.02,
+  "branch": "mom",
+  "tau_lo": 60,
+  "tau_hi": 240,
+  "band": [
+   0.6,
+   0.75
+  ]
+ },
+ {
+  "id": "acvr-03",
+  "family": "ACVR",
+  "thr": 0.02,
+  "branch": "rev",
+  "tau_lo": 30,
+  "tau_hi": 150,
+  "band": [
+   0.6,
+   0.75
+  ]
+ },
+ {
+  "id": "acvr-04",
+  "family": "ACVR",
+  "thr": 0.02,
+  "branch": "rev",
+  "tau_lo": 60,
+  "tau_hi": 240,
+  "band": [
+   0.6,
+   0.75
+  ]
+ },
+ {
+  "id": "acvr-05",
+  "family": "ACVR",
+  "thr": 0.02,
+  "branch": "both",
+  "tau_lo": 30,
+  "tau_hi": 150,
+  "band": [
+   0.6,
+   0.75
+  ]
+ },
+ {
+  "id": "acvr-06",
+  "family": "ACVR",
+  "thr": 0.02,
+  "branch": "both",
+  "tau_lo": 60,
+  "tau_hi": 240,
+  "band": [
+   0.6,
+   0.75
+  ]
+ },
+ {
+  "id": "acvr-07",
+  "family": "ACVR",
+  "thr": 0.05,
+  "branch": "mom",
+  "tau_lo": 30,
+  "tau_hi": 150,
+  "band": [
+   0.6,
+   0.75
+  ]
+ },
+ {
+  "id": "acvr-08",
+  "family": "ACVR",
+  "thr": 0.05,
+  "branch": "mom",
+  "tau_lo": 60,
+  "tau_hi": 240,
+  "band": [
+   0.6,
+   0.75
+  ]
+ },
+ {
+  "id": "acvr-09",
+  "family": "ACVR",
+  "thr": 0.05,
+  "branch": "rev",
+  "tau_lo": 30,
+  "tau_hi": 150,
+  "band": [
+   0.6,
+   0.75
+  ]
+ },
+ {
+  "id": "acvr-10",
+  "family": "ACVR",
+  "thr": 0.05,
+  "branch": "rev",
+  "tau_lo": 60,
+  "tau_hi": 240,
+  "band": [
+   0.6,
+   0.75
+  ]
+ },
+ {
+  "id": "acvr-11",
+  "family": "ACVR",
+  "thr": 0.05,
+  "branch": "both",
+  "tau_lo": 30,
+  "tau_hi": 150,
+  "band": [
+   0.6,
+   0.75
+  ]
+ },
+ {
+  "id": "acvr-12",
+  "family": "ACVR",
+  "thr": 0.05,
+  "branch": "both",
+  "tau_lo": 60,
+  "tau_hi": 240,
+  "band": [
+   0.6,
+   0.75
+  ]
+ }
+]
