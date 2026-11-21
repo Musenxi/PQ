@@ -58,10 +58,14 @@ MAX_ORDERS_DAY = 1000000  # count cap removed at lizi instruction 2026-11-19; sp
 MAX_SPEND_DAY = 1000000.0  # daily spend cap removed at lizi instruction 2026-11-19 ~18:59 JST; per-order $5 cap and the account balance remain the bounds
 GAP_MIN = 0.06            # farm1h fair-05: the FAIR 1h family median gap
 TAU_MIN = 300             # farm1h fair-05: entries only while tau >= 300 s
-BAND = (0.55, 0.75)       # SWEET BAND (0.55-0.75) added 2026-11-21 ~18:55 JST at lizi's
+BAND = (0.60, 0.75)       # SWEET BAND (0.55-0.75) added 2026-11-21 ~18:55 JST at lizi's
                           # instruction; was farm1h fair-05 band (0.15, 0.92).
                           # Config break: probe tallies before/after this line are
                           # separate segments, do not pool.
+                          # 2026-11-21 ~20:17 JST: narrowed to (0.60, 0.75) at lizi's
+                          # instruction (probe 0.55-0.60 live slice: 3 fills, 1 win).
+                          # Segment 3 starts with the 21:00 JST window; segment 2
+                          # (0.55-0.75) ran 19:00-21:00 JST only.
 ENTRY_DELAY_S = 60        # farm1h: no fair-anchored entries in the first 60 s
 Z_SHRINK = 1.35           # calibration correction: the farm fair is
                           # systematically overconfident; z / 1.35 improved

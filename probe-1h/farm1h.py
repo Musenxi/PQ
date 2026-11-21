@@ -216,8 +216,14 @@ def build_configs():
     # fair-05 per-window PnL) block-bootstrap 95% CI must exclude 0
     # on the positive side AND band-01 post-fee PnL > 0, else the
     # band rule is rejected and not re-sliced.
+    # BAND NARROWED to (0.60, 0.75) 2026-11-21 ~20:17 JST at lizi's
+    # instruction (the live probe's 0.55-0.60 slice went 1W/2L; the
+    # three-cut consensus band was 0.60-0.75 all along). The clone's
+    # pre-narrowing sample was <=2 windows, so the frozen read clock
+    # restarts from the 2026-11-21 21:00 JST window; all other terms
+    # unchanged.
     cfgs.append({"id": "band-01", "family": "BAND", "gap": 0.06,
-                 "tau_min": 300, "band": (0.55, 0.75)})
+                 "tau_min": 300, "band": (0.60, 0.75)})
     # LATE (added 2026-11-19 at lizi's instruction): cross-window /
     # late-hour certainty. Only in the last tau_max seconds of the
     # hour, only on the side whose TWAP path margin is already
