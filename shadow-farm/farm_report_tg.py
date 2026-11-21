@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """farm_report_tg.py -- half-hourly paper-farm scorecard to Telegram.
 
-Runs on the VPS next to the farm data. Every 30 minutes it aggregates
+Runs on the VPS next to the farm data. Every 10 minutes it aggregates
 the shadow farm (family x window, Gamma-corrected ledger) plus the
 BTC 1h probe and pushes one compact Chinese scorecard to the same
 Telegram chat the live-probe bot reports to. Config (TG_BOT_TOKEN,
@@ -27,10 +27,11 @@ except OSError:
 TOKEN = ENV.get("TG_BOT_TOKEN") or os.environ.get("TG_BOT_TOKEN")
 CHAT = ENV.get("TG_CHAT_ID") or os.environ.get("TG_CHAT_ID")
 
-FARM = "/root/polymarket-farm/data"
+FARM = "/root/polymarket-farm2/data"  # band farm (farm2) since 2026-11-21; the old
+# farm is no longer reported (lizi instruction)
 FARM1H = "/root/polymarket-farm1h/data"
 JST = timezone(timedelta(hours=9))
-INTERVAL_S = 1800
+INTERVAL_S = 600
 
 
 def read_jsonl(path):
@@ -107,7 +108,7 @@ def build_report():
     now = datetime.now(JST).strftime("%m-%d %H:%M")
     agg = fam_stats(FARM)
     order = ["FAIR", "MVAL", "ACVR", "MOM", "OPENFADE", "REV", "SNIPE"]
-    lines = ["📊 模拟盘半小时报（" + now + " JST）", "影子农场（官方结算口径）："]
+    lines = ["📊 模拟盘十分钟报（" + now + " JST）", "新农场·甜点带0.60-0.75（官方结算口径）："]
     for fam in order:
         if fam in agg:
             w, tot = agg[fam]
@@ -119,6 +120,10 @@ def build_report():
                      + "（" + str(pairs) + " 窗成对）· 残余方向 " + fmt(resid)
                      + " · 合计 " + fmt(tot))
     agg1 = fam_stats(FARM1H)
+    if "BAND" in agg1:
+        w, tot = agg1["BAND"]
+        lines.append("1h 甜点带克隆 band-01：" + str(w) + " 窗 · 合计 "
+                     + fmt(tot))
     if "FAIR" in agg1:
         w, tot = agg1["FAIR"]
         lines.append("1h 探针：FAIR " + str(w) + " 窗 · 合计 " + fmt(tot))
