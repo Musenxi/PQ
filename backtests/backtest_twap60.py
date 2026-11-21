@@ -225,7 +225,7 @@ def main():
 
     trades = {g: [] for g in GAPS}       # variant (i) trigger-ask fills
     trades_nx = {g: [] for g in GAPS}    # variant (ii) next-snapshot fills
-    skipped = {"no_ptb": 0, "no_sigma": 0, "no_seg": 0}
+    skipped = {"no_ptb": 0, "no_sigma": 0, "no_seg": 0, "stale_feed": 0}
     for slug in slugs:
         info = cache.get(slug)
         if not info:
@@ -240,8 +240,16 @@ def main():
             skipped["no_seg"] += 1
             continue
         basis = open_cl - p_open
+        # feed-freshness guard: the Tokyo Binance feed was down
+        # 2026-11-20 16:20 UTC -> 2026-11-21 05:51 UTC (disk full);
+        # windows whose final minute has no print within 30 s are
+        # priced on a frozen series and must be excluded.
+        li = bisect.bisect_right(bts, T + 300) - 1
+        if li < 0 or bts[li] < T + 270:
+            skipped["stale_feed"] += 1
+            continue
         sig = sigma_at(bts, bpx, T + 240)
-        if sig is None:
+        if sig is None or sig <= 0:
             skipped["no_sigma"] += 1
             continue
         fee_rate = 0.05 if T >= FEE_FLIP else 0.07
