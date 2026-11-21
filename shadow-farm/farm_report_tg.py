@@ -56,10 +56,12 @@ def fam_stats(data_dir):
     for r in rows:
         fam = r["account"].split("-")[0].upper()
         win[(fam, r["slug"])] += float(r.get("pnl", 0))
-    agg = defaultdict(lambda: [0, 0.0])
+    agg = defaultdict(lambda: [0, 0.0, 0])
     for (fam, slug), v in win.items():
         agg[fam][0] += 1
         agg[fam][1] += v
+        if v > 0:
+            agg[fam][2] += 1
     return agg
 
 
@@ -69,10 +71,12 @@ def acct_stats(data_dir):
     win = defaultdict(float)
     for r in rows:
         win[(r["account"], r["slug"])] += float(r.get("pnl", 0))
-    agg = defaultdict(lambda: [0, 0.0])
+    agg = defaultdict(lambda: [0, 0.0, 0])
     for (aid, slug), v in win.items():
         agg[aid][0] += 1
         agg[aid][1] += v
+        if v > 0:
+            agg[aid][2] += 1
     return agg
 
 
@@ -159,20 +163,24 @@ def farm_section(data_dir, order, prev):
                    if a.split("-")[0].upper() == fam]
         if not members:
             continue
-        w, tot = agg.get(fam, [0, 0.0])
+        w, tot, wins = agg.get(fam, [0, 0.0, 0])
         pw, ptot = pfam.get(fam, [0, 0.0])
         line = "· " + fam + "：" + str(w) + " 窗 · 合计 " + fmt(tot)
         if w:
             line += " · 均值 " + fmt(tot / w) + "/窗"
+            line += " · 胜率 " + format(wins / w, ".0%")
         line += delta(w, tot, pw, ptot)
         out.append(line)
         for aid in members:
-            aw, atot = accts.get(aid, [0, 0.0])
+            aw, atot, awins = accts.get(aid, [0, 0.0, 0])
             paw, patot = pacct.get(aid, [0, 0.0])
-            out.append("　· " + aid + "：" + str(aw) + " 窗 · "
-                       + fmt(atot) + delta(aw, atot, paw, patot))
-    cur = {"fam": {k: list(v) for k, v in agg.items()},
-           "acct": {k: list(v) for k, v in accts.items()}}
+            aline = "　· " + aid + "：" + str(aw) + " 窗 · " + fmt(atot)
+            if aw:
+                aline += " · 胜率 " + format(awins / aw, ".0%")
+            aline += delta(aw, atot, paw, patot)
+            out.append(aline)
+    cur = {"fam": {k: list(v[:2]) for k, v in agg.items()},
+           "acct": {k: list(v[:2]) for k, v in accts.items()}}
     return out, cur
 
 
