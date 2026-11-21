@@ -141,21 +141,24 @@ ENTRY_DELAY_S = 15  # fair-anchored families may not enter in a window's first s
 
 # ---------------------------------------------------------------- accounts
 def build_configs():
-    # BAND FARM (farm2, opened 2026-11-21 at lizi's instruction): the
-    # directional families of the original shadow farm, re-based with
-    # the sweet-band rule built in -- every entry band is (0.60, 0.75),
-    # the zone where the 5m cuts agree (market-wide calibration curve
-    # positive 0.60-0.80, the old farm's own entries peaking at
-    # 0.65-0.70). Bands are per-market by lizi's decision 2026-11-21:
-    # the 1h lines use (0.55, 0.75) on the 1h market's own evidence.
-    # Excluded by design: SNIPE (tail pairs cannot complete inside
-    # the band), MVAL (cheap-share accumulation IS the mechanic),
-    # OPENFADE (entries are structurally < 0.50). The ORIGINAL farm
-    # keeps running unmodified as the concurrent control; this
-    # farm's ledgers start clean.
+    # BAND FARM (farm2, opened 2026-11-21 at lizi's instruction): ALL
+    # SEVEN directional/pair families of the original shadow farm,
+    # re-based with the sweet-band rule built in -- every entry band
+    # is (0.60, 0.75), the zone where the 5m cuts agree (market-wide
+    # calibration curve positive 0.60-0.80, the old farm's own
+    # entries peaking at 0.65-0.70). Bands are per-market by lizi's
+    # decision 2026-11-21: the 1h lines use (0.55, 0.75) on the 1h
+    # market's own evidence. Roster completed to all 7 families at
+    # lizi's instruction 2026-11-21 ~19:52 (the first farm2 roster
+    # had only FAIR/MOM/REV/ACVR). Note: SNIPE (tail pairs), MVAL
+    # (cheap-share accumulation) and OPENFADE (entries structurally
+    # < 0.50) fight the band by construction -- they are included
+    # anyway; if they cannot trade in-band, the data will show it.
+    # The ORIGINAL farm keeps running unmodified as the concurrent
+    # control; this farm's ledgers start clean.
     # PRE-REGISTERED READ (frozen 2026-11-21): per family, >=300
     # settled windows AND >=7 days; family x window block bootstrap,
-    # Bonferroni across the 4 families; a family passes only if its
+    # Bonferroni across the 7 families; a family passes only if its
     # own post-fee PnL CI excludes 0 positively AND the paired
     # per-window diff vs the old farm's same family over shared
     # windows is positive with CI excluding 0.
@@ -189,6 +192,29 @@ def build_configs():
                              "thr": thr, "branch": branch,
                              "tau_lo": tau_rng[0], "tau_hi": tau_rng[1],
                              "band": (0.60, 0.75)})
+    n = 0
+    for gap in (0.06, 0.08, 0.10):
+        for pair_max in (0.95, 0.97):
+            for exit_after in (0, 60):
+                n += 1
+                cfgs.append({"id": f"snipe-{n:02d}", "family": "SNIPE",
+                             "gap": gap, "pair_max": pair_max,
+                             "exit_after": exit_after, "tau_min": 60,
+                             "band": (0.60, 0.75)})
+    n = 0
+    for thr in (30.0, 50.0, 70.0):
+        for entry_end in (30, 60):
+            n += 1
+            cfgs.append({"id": f"openfade-{n:02d}", "family": "OPENFADE",
+                         "thr": thr, "entry_start": 8,
+                         "entry_end": entry_end, "band": (0.60, 0.75)})
+    n = 0
+    for gap in (0.02, 0.03, 0.05):
+        for max_entries in (4, 8):
+            n += 1
+            cfgs.append({"id": f"mval-{n:02d}", "family": "MVAL",
+                         "gap": gap, "band": (0.60, 0.75),
+                         "max_entries": max_entries, "tau_min": 20})
     return cfgs
 
 
