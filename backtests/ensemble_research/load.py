@@ -14,7 +14,7 @@ def prep(t,s):
     return t,s,w
 t,s,W=prep(rd('farm-5m-old/trades.jsonl.gz'),rd('farm-5m-old/settlements.jsonl.gz'))
 def fee_ps(tsec, p, h1=False):
-    r = np.where(tsec<1795305540, .07, (.01 if h1 else .05))
+    r = np.where(tsec<1795219140, .07, (.01 if h1 else .05))
     return r*p*(1-p)
 x=t[(t.leg==1)].dropna(subset=['win']).copy()
 x['feeps']=fee_ps(x.tsec.values,x.price.values)
