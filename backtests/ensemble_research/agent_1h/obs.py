@@ -3,7 +3,7 @@ def obs1h():
     L=[]
     t=rd('farm-1h/trades.jsonl.gz'); t=t[t.leg==1]; t['src']='farm1h'
     L.append(t[['ts','slug','side','price','src']])
-    w=rd('farm-1h-swing/trades.jsonl.gz'); w['src']='swing'; L.append(w[['ts','slug','side','price','src']])
+    w=rd('farm-1h-swing/trades.jsonl.gz'); w['src']=np.where(w.leg.astype(str)=='exit','swingbid','swing'); L.append(w[['ts','slug','side','price','src']])
     for f in ['orders','signals']:
         o=rd(f'live-probe-1h/{f}.jsonl.gz'); o['price']=o.ask; o['src']='probe'; L.append(o[['ts','slug','side','price','src']])
     x=pd.concat(L); x['tsec']=tsec(x.ts).round(1); x['start']=start(x.slug)
