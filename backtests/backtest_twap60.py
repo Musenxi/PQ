@@ -169,7 +169,10 @@ def sigma_at(ts, px, t):
 
 
 def main():
-    days = ["2026-11-19", "2026-11-20", "2026-11-21"]
+    import glob as _glob
+    days = sorted({os.path.basename(p)[8:-6]
+                   for p in _glob.glob(os.path.join(REC, "binance-*.jsonl"))})
+    print(f"days: {days}", flush=True)
     print("loading binance prints...", flush=True)
     bts, bpx = load_binance(days)
     print(f"  {len(bts)} prints", flush=True)
