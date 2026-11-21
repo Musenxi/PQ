@@ -57,11 +57,15 @@ MAX_ORDER_USD = 5.00      # hard per-order CAP (lizi clarified 2026-11-19
 MAX_ORDERS_DAY = 1000000  # count cap removed at lizi instruction 2026-11-19; spend caps remain
 MAX_SPEND_DAY = 1000000.0  # daily spend cap removed at lizi instruction 2026-11-19 ~18:59 JST; per-order $5 cap and the account balance remain the bounds
 GAP_MIN = 0.06            # farm1h fair-05: the FAIR 1h family median gap
-TAU_MIN = 300             # farm1h fair-05: entries only while tau >= 300 s
+TAU_MIN = 900             # farm1h fair-07: entries only while tau >= 900 s
+                          # (was fair-05's 300 until 2026-11-22 ~01:45 JST,
+                          # when lizi picked fair-07 for segment 4)
 BAND = (0.15, 0.92)       # 2026-11-22 ~01:40 JST: probe switched to the
-                          # PAPER fair-05 config verbatim at lizi's
-                          # instruction ("换成纸面策略"): raw-fair gate
-                          # (see the gate block) + full band (0.15, 0.92).
+                          # PAPER config verbatim at lizi's instruction
+                          # ("换成纸面策略"): raw-fair gate (see the gate
+                          # block) + full band (0.15, 0.92); ~01:45 JST
+                          # lizi picked fair-07 over fair-05 (TAU_MIN
+                          # 900), so segment 4 is fair-07 exactly.
                           # Config break: SEGMENT 4 starts with the
                           # 2026-11-22 02:00 JST window; do not pool with
                           # segments 1-3. History: S1 full band + corrected

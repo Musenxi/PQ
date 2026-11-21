@@ -16,7 +16,7 @@ DATA = "/root/polymarket-live1h/data"
 JST = timezone(timedelta(hours=9))
 STAKE = 5.0
 SEG = [(1795255200, "S1 corr+full"), (1795262400, "S2 corr 0.55-0.75"),
-       (1795280400, "S3 corr 0.60-0.75"), (None, "S4 paper fair-05")]
+       (1795280400, "S3 corr 0.60-0.75"), (None, "S4 paper fair-07")]
 
 
 def seg_of(start):
@@ -82,7 +82,7 @@ def main():
               f"{r['winner']:5} {r['twin']:+8.2f} {lv:>8}")
     print()
     for _, name in [(0, "S1 corr+full"), (0, "S2 corr 0.55-0.75"),
-                    (0, "S3 corr 0.60-0.75"), (0, "S4 paper fair-05")]:
+                    (0, "S3 corr 0.60-0.75"), (0, "S4 paper fair-07")]:
         sub = [r for r in rows if r["seg"] == name]
         if not sub:
             continue
