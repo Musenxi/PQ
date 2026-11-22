@@ -5,6 +5,7 @@ import os, sys, numpy as np, bisect
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from load import meta, Mkt, boot_ci, TD
 M = meta()
+GAP = int(sys.argv[1]) if len(sys.argv) > 1 else 5
 def fee_rate(a, d, t):
     if d == "1h": return 0.01
     if a == "btc": return 0.05 if t >= 1795219140 else 0.07
@@ -16,7 +17,7 @@ for Ld, Sd, off, sdur in PAIRS:
     for a in ("btc", "eth", "sol", "xrp"):
         Ls = sorted(k for k, v in M.items() if v["asset"] == a and v["dur"] == Ld and ex(k) and v["k"])
         nwin = nviol = narb = 0; vsz = []; arbp = []; combo = []; ffmis = 0
-        imp, real = [], []
+        imp, real = [], []; arbinfo = []
         for sl in Ls:
             u = M[sl]["start"]; ss = f"{a}-updown-{Sd}-{u + off}"
             if ss not in M or not ex(ss) or not M[ss]["k"]: continue
@@ -40,17 +41,17 @@ for Ld, Sd, off, sdur in PAIRS:
             # (ii) executable arb from actual taker BUY fills within 5s: Up(low) at a1, Down(high) at b1
             iu = np.where((lowM.oi == 0) & (lowM.side == 1) & (lowM.ts >= ts0))[0]
             idn = np.where((highM.oi == 1) & (highM.side == 1) & (highM.ts >= ts0))[0]
-            best = 9
+            best = 9; binfo = None
             if len(iu) and len(idn):
                 tb = highM.ts[idn]
                 for i in iu:
-                    j0, j1 = bisect.bisect_left(tb, lowM.ts[i] - 5), bisect.bisect_right(tb, lowM.ts[i] + 5)
+                    j0, j1 = bisect.bisect_left(tb, lowM.ts[i] - GAP), bisect.bisect_right(tb, lowM.ts[i] + GAP)
                     if j1 > j0:
                         a1 = lowM.px[i]; b1 = highM.px[idn[j0:j1]].min()
                         dl = Ld if lowM is L else Sd; dh = Sd if lowM is L else Ld
                         c = a1 + b1 + fee_rate(a, dl, u) * a1 * (1 - a1) + fee_rate(a, dh, u) * b1 * (1 - b1)
-                        best = min(best, c)
-            if best < 1: narb += 1; arbp.append(1 - best)
+                        if c < best: best = c; binfo = (int(ts0 + sdur - lowM.ts[i]), round(a1, 3), round(float(b1), 3), round(abs(KL / KS - 1) * 1e4, 1))
+            if best < 1: narb += 1; arbp.append(1 - best); arbinfo.append(binfo)
             # (iii) fair value of the 'between' probability at t = ts0+60 (one per window)
             t = ts0 + 60
             pl, ph = lowM.last_up(t, 20), highM.last_up(t, 20)
@@ -60,8 +61,11 @@ for Ld, Sd, off, sdur in PAIRS:
         if nwin == 0: print(a, "no data"); continue
         imp, real = np.array(imp), np.array(real)
         line = f" {a}: windows={nwin} F-mismatch={ffmis} viol(any 15s sample, last-trade)={nviol} ({nviol/nwin:.1%}) med max-viol={np.median(vsz) if vsz else 0:.3f}"
-        line += f" | exec arb fills<=5s apart, cost+fees<1: {narb} windows, med edge={np.median(arbp) if arbp else 0:.3f}"
+        line += f" | exec arb fills<=GAPs apart, cost+fees<1: {narb} windows, med edge={np.median(arbp) if arbp else 0:.3f}"
         print(line)
+        if arbinfo:
+            ai = np.array(arbinfo, float)
+            print(f"    arb detail: median sec-to-end={np.median(ai[:,0]):.0f}, med legs=({np.median(ai[:,1]):.3f},{np.median(ai[:,2]):.3f}), med strike gap={np.median(ai[:,3]):.1f}bp, share with a leg<=0.05: {np.mean(np.minimum(ai[:,1],ai[:,2])<=0.05):.2f}")
         if len(imp) > 50:
             for lo, hi in ((-1, 0.0), (0.0, 0.05), (0.05, 0.15), (0.15, 1.1)):
                 k = (imp > lo) & (imp <= hi)
