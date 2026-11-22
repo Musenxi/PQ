@@ -3,3 +3,4 @@ parts/
 fetch_parts.sh
 fetch_parts.log
 staging/
+__pycache__/
