@@ -48,7 +48,13 @@ PM_WEB = "https://polymarket.com"
 UA = {"User-Agent": "Mozilla/5.0 (live-probe)"}
 
 # ------------------------------------------------------------ hard caps
-ORDER_USD = 1.50          # target size per order
+ORDER_USD = 3.00          # target size per order (raised from 1.50 on
+                          # 2026-11-22 ~15:52 JST at lizi's approval:
+                          # fixed-AMOUNT sizing -- at 1.50 the 5-share
+                          # minimum silently turned most orders into
+                          # fixed-SHARES, concentrating dollar risk in
+                          # the highest-price entries; at 3.00 the
+                          # amount is honoured for ask <= 0.60)
 MAX_ORDER_USD = 5.00      # hard per-order CAP (lizi clarified 2026-11-19
                           # ~16:23 JST: a cap, not a fixed $5 size).
                           # History: $2.00 at launch -> $2.50 (~16:13 JST)
