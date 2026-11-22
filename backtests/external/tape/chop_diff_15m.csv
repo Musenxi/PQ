@@ -1,0 +1,13 @@
+kind,band,half,weight,diff_notcrossed_minus_crossed_pct,lo,hi
+15m,band,A,all,2.12,-7.78,11.58
+15m,band,A,first,1.45,-10.38,13.81
+15m,band,B,all,2.26,-9.59,14.43
+15m,band,B,first,8.46,-3.78,20.75
+15m,band,all,all,2.2,-5.52,9.8
+15m,band,all,first,4.98,-3.72,13.56
+15m,cheap,A,all,-9.16,-34.19,14.93
+15m,cheap,A,first,0.46,-17.66,19.9
+15m,cheap,B,all,-3.0,-24.71,20.23
+15m,cheap,B,first,-14.18,-33.12,4.83
+15m,cheap,all,all,-5.84,-22.03,11.39
+15m,cheap,all,first,-6.93,-20.66,5.8

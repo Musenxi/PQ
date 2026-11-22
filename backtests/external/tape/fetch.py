@@ -41,15 +41,32 @@ def get(url):
     raise RuntimeError("failed " + url)
 
 
+def legacy_slug(s):
+    """Pre-2026-11-10 16:00 UTC hourly slugs: bitcoin-up-or-down-november-10-2026-5am-et"""
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    d = datetime.fromtimestamp(s, ZoneInfo("America/New_York"))
+    h = d.hour % 12 or 12
+    return f"bitcoin-up-or-down-{d.strftime('%B').lower()}-{d.day}-{d.year}-{h}{'am' if d.hour < 12 else 'pm'}-et"
+
+
+def slug_of(kind, s):
+    if kind == "1h" and (s < 1794326400 or os.environ.get("LEGACY")):
+        return legacy_slug(s)
+    return f"btc-updown-{kind}-{s}"
+
+
 def fetch_meta(kind, starts, mdir):
-    todo = [s for s in starts if not os.path.exists(f"{mdir}/{s}.json")]
+    todo = [s for s in starts if not os.path.exists(f"{mdir}/{s}.json")
+            or (kind == "1h" and "missing" in open(f"{mdir}/{s}.json").read())]
     for i in range(0, len(todo), 20):
         chunk = todo[i:i + 20]
-        q = "&".join(f"slug=btc-updown-{kind}-{s}" for s in chunk)
+        bys = {slug_of(kind, s): s for s in chunk}
+        q = "&".join(f"slug={x}" for x in bys)
         evs = get(f"{GAMMA}?{q}")
         got = set()
         for e in evs:
-            s = int(e["slug"].rsplit("-", 1)[1])
+            s = bys[e["slug"]]
             m = e["markets"][0]
             rec = {k: m.get(k) for k in ("conditionId", "clobTokenIds", "outcomePrices",
                                          "umaResolutionStatus", "feeSchedule", "closed",

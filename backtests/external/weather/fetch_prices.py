@@ -8,6 +8,7 @@ ev = load_events()
 order = sorted(ev.values(), key=lambda e: (e['unit'] != 'F', -e['date'].toordinal(), -e['vol']))
 only = sys.argv[1] if len(sys.argv) > 1 else None
 if only == 'F': order = [e for e in order if e['unit'] == 'F']
+if only == 'CH': order = [e for e in order if e['unit'] == 'C' and e['kind'] == 'H' and str(e['date']) >= (sys.argv[2] if len(sys.argv) > 2 else '2026-11-12')]
 
 def get(url):
     for k in range(5):
