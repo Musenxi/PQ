@@ -41,9 +41,12 @@ def trades(cond, taker_only):
         pg = d.get("pagination", {})
         if not pg.get("has_more") or not pg.get("next_cursor"):
             break
-        url = base + "?" + urllib.parse.urlencode({"cursor": pg["next_cursor"]})
+        # NB: API cursor silently drops condition/taker_only filters -> restate them
+        url = base + "?" + urllib.parse.urlencode(dict(q, cursor=pg["next_cursor"]))
     slim = []
     for x in out:
+        if x.get("condition_id") != cond:
+            continue
         slim.append({k: x.get(k) for k in ("proxy_wallet", "side", "token_id", "size", "price",
                                             "timestamp", "outcome", "outcome_index",
                                             "transaction_hash", "pseudonym", "name")})
