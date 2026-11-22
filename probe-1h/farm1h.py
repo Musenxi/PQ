@@ -252,6 +252,29 @@ def build_configs():
                 cfgs.append({"id": f"late-{n:02d}", "family": "LATE",
                              "margin_z": margin_z, "gap": gap, "band": band,
                              "tau_max": 600})
+    # FV7 (added 2026-11-22 at lizi's instruction): fair-07 clones
+    # that differ ONLY in the entry TRIGGER, testing whether the
+    # first-crossing rule ("fire the first tick the gap passes") is
+    # itself the defect lizi identified -- entries concentrate at
+    # offset ~61-181 s (median 68 s), i.e. the strategy effectively
+    # bets on the first minute's wobble, and live execution punishes
+    # exactly the transient quotes first-crossing selects.
+    #   fv7-persist: gap >= 0.06 must hold on 3 consecutive ticks
+    #   fv7-fixed:   evaluate ONCE at the first tick >= 120 s
+    #   fv7-avg:     gap computed from the mean fair of the last
+    #                5 ticks (~10 s)
+    # PRE-REGISTERED READ (frozen 2026-11-22): >=60 settled windows
+    # per variant AND >=7 days; paired per-window diff vs fair-07
+    # over shared windows, block-bootstrap 95% CI must exclude 0
+    # positively AND the variant's own post-fee PnL > 0; only then
+    # may a variant replace the live trigger. Until then the live
+    # probe follows fair-07's first-crossing signal unchanged.
+    for vid, trig in (("fv7-persist", "persist3"),
+                      ("fv7-fixed", "fixed120"),
+                      ("fv7-avg", "avg10")):
+        cfgs.append({"id": vid, "family": "FV7", "gap": 0.06,
+                     "tau_min": 900, "band": (0.15, 0.92),
+                     "trigger": trig})
     return cfgs
 
 
@@ -271,6 +294,12 @@ class Account:
         self.settled = 0
         self.wins = 0
         self.pnl = 0.0
+        # FV7 trigger-variant state (added 2026-11-22)
+        self.trig_slug = None
+        self.trig_side = None
+        self.trig_count = 0
+        self.fair_hist = {"Up": [], "Down": []}
+        self.fixed_slug = None
 
     @property
     def alive(self):
@@ -636,10 +665,31 @@ def execute_buy(a, win, side, leg, ctx, order):
     append_jsonl("trades.jsonl", row)
     if leg == 1:
         track_fair07_binance(a, win, ctx, side)
+        publish_fair07_signal(a, win, ctx, side, row)
     print(f"[trade] {a.id} {'BUY' if leg == 1 else 'PAIR'} {side} @ {vwap:.3f} "
           f"cash={a.cash:.2f} {win.slug}", flush=True)
     return True
 
+
+
+SIGNAL_OUT = "fair07_signals.jsonl"
+
+
+def publish_fair07_signal(a, win, ctx, side, row):
+    """Single signal source (2026-11-22, lizi: the live probe must
+    trade THIS farm's fair-07 signal, not its own computation --
+    two engines with the same config still diverged in direction
+    on the 2026-11-22 22:00 JST window). Every confirmed fair-07
+    leg-1 fill appends one signal row; an Azure sidecar mirrors
+    the file to the probe, which executes it against its local
+    book. Variants (FV7) do NOT publish -- fair-07 is the live
+    signal until a variant passes its pre-registered read."""
+    if a.id != "fair-07":
+        return
+    append_jsonl(SIGNAL_OUT, {"slug": win.slug, "side": side,
+                              "fair": row.get("fair"),
+                              "ask": row.get("price"),
+                              "gap": row.get("gap"), "ts": ctx["now"]})
 
 
 BINANCE_TRACK = "fair07_binance.jsonl"
@@ -767,6 +817,23 @@ def account_tick(a, win, ctx):
         if tau < cfg["tau_min"]:
             return
         fairs = ctx["fairs_adj"] if cfg.get("corrected") else ctx["fairs"]
+        trig = cfg.get("trigger")
+        if trig == "avg10":
+            if a.trig_slug != win.slug:
+                a.trig_slug = win.slug
+                a.fair_hist = {"Up": [], "Down": []}
+            for s in ("Up", "Down"):
+                if fairs.get(s) is not None:
+                    a.fair_hist[s] = (a.fair_hist[s] + [fairs[s]])[-5:]
+            fairs = {s: (sum(a.fair_hist[s]) / len(a.fair_hist[s])
+                         if a.fair_hist[s] else fairs[s])
+                     for s in ("Up", "Down")}
+        if trig == "fixed120":
+            if ctx["now"] - win.start < 120:
+                return
+            if a.fixed_slug == win.slug:
+                return
+            a.fixed_slug = win.slug
         best_gap = None
         for s in ("Up", "Down"):
             ask = books[s][1][0]
@@ -776,10 +843,23 @@ def account_tick(a, win, ctx):
             if best_gap is None or gap > best_gap[0]:
                 best_gap = (gap, s)
         if not best_gap or best_gap[0] < cfg["gap"]:
+            if trig == "persist3":
+                a.trig_count = 0
+                a.trig_side = None
             return
+        if trig == "persist3":
+            if a.trig_slug != win.slug or a.trig_side != best_gap[1]:
+                a.trig_slug, a.trig_side = win.slug, best_gap[1]
+                a.trig_count = 1
+            else:
+                a.trig_count += 1
+            if a.trig_count < 3:
+                return
         side = best_gap[1]
         extra = {"gap": round(best_gap[0], 3), "fair": round(fairs[side], 3),
                  "basis": round(ctx["basis"], 1)}
+        if trig:
+            extra["trigger"] = trig
     elif fam == "LATE":
         if ctx.get("basis") is None or ctx["now"] - win.start < ENTRY_DELAY_S:
             return
