@@ -68,6 +68,7 @@ print("latency / tau / side breakdown (dvol if available else rv60, D=0.15):")
 key = "dvol" if dv else "rv60"
 for lat in (1, 2, 5):
     rep(f"lat={lat}s D=0.15", run(key, 0.15, lat))
+    rep(f"lat={lat}s D=0.15 rv60", run("rv60", 0.15, lat))
     for k2 in ("rv60", "fixed"):
         rep(f"lat={lat}s D=0.25 {k2}", run(k2, 0.25, lat))
 for tau in (60, 120, 180, 240):
