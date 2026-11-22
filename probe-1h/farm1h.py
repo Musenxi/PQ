@@ -811,7 +811,7 @@ def account_tick(a, win, ctx):
         if fam == "REV":
             side = "Down" if side == "Up" else "Up"
         extra = {"move": round(mv, 1), "lookback": cfg["lookback"]}
-    elif fam in ("FAIR", "BAND"):
+    elif fam in ("FAIR", "BAND", "FV7"):
         if ctx.get("basis") is None or ctx["now"] - win.start < ENTRY_DELAY_S:
             return
         if tau < cfg["tau_min"]:
