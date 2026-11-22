@@ -634,9 +634,44 @@ def execute_buy(a, win, side, leg, ctx, order):
     a.first_try = None
     a.tries = 0
     append_jsonl("trades.jsonl", row)
+    if leg == 1:
+        track_fair07_binance(a, win, ctx, side)
     print(f"[trade] {a.id} {'BUY' if leg == 1 else 'PAIR'} {side} @ {vwap:.3f} "
           f"cash={a.cash:.2f} {win.slug}", flush=True)
     return True
+
+
+
+BINANCE_TRACK = "fair07_binance.jsonl"
+BINANCE_PAYOUT = 0.85  # Binance 1h event-contract payout (lizi, 2026-11-22)
+
+
+def track_fair07_binance(a, win, ctx, side):
+    """On every fair-07 entry, log the Binance spot at the entry moment
+    (added 2026-11-22 at lizi's instruction): a Binance 1h event
+    contract placed at this moment would settle point-to-point on the
+    spot 3600s later; settle_binance_tracker scores it."""
+    if a.id != "fair-07":
+        return
+    append_jsonl(BINANCE_TRACK, {"type": "entry", "slug": win.slug,
+                                 "ts": ctx["now"], "side": side,
+                                 "spot": ctx["spot"]})
+
+
+def settle_binance_tracker(now, spot):
+    if spot is None:
+        return
+    rows = read_jsonl(BINANCE_TRACK)
+    settled = {r["slug"] for r in rows if r.get("type") == "settle"}
+    for r in rows:
+        if r.get("type") != "entry" or r["slug"] in settled:
+            continue
+        if now >= r["ts"] + 3600:
+            win = (r["side"] == "Up") == (spot > r["spot"])
+            append_jsonl(BINANCE_TRACK,
+                         {"type": "settle", "slug": r["slug"],
+                          "exit_spot": spot, "win": win,
+                          "units": BINANCE_PAYOUT if win else -1.0})
 
 
 def execute_exit(a, win, ctx, order):
@@ -1081,6 +1116,7 @@ def main():
                 p0 = price_at(prices, now - L)
                 moves[L] = (spot - p0) if p0 else None
             rho, vr, ac_dir = acvr_stats(prices)
+            settle_binance_tracker(now, spot)
             ctx = {"now": now, "tau": tau, "spot": spot, "slug": win.slug,
                    "basis": win.basis,
                    "fairs": {"Up": fair_up, "Down": (1.0 - fair_up) if fair_up is not None else None},

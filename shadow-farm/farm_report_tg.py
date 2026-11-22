@@ -200,6 +200,14 @@ def build_report(update_prev=True):
     lines.append("1h 农场（官方结算口径）：")
     sec, cur1 = farm_section(FARM1H, ["FAIR", "BAND", "LATE"], prev)
     lines += sec
+    bnc = read_jsonl("/root/polymarket-farm1h/data/fair07_binance.jsonl")
+    bset = [r for r in bnc if r.get("type") == "settle"]
+    if bset:
+        bw = sum(1 for r in bset if r["win"])
+        bu = sum(r["units"] for r in bset)
+        lines.append("fair-07→币安1h点对点: " + str(len(bset)) + " 单 胜率 "
+                     + f"{bw / len(bset):.0%}" + " 按85%赔率期望 "
+                     + f"{bu / len(bset):+.2f}" + "/注")
     try:
         st = json.load(open(os.path.join(FARM, "state.json")))
         alive = sum(1 for a in st["accounts"].values() if a.get("alive"))
