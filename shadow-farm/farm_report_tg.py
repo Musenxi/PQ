@@ -198,7 +198,7 @@ def build_report(update_prev=True):
                      + fmt(locked) + "（" + str(pairs) + " 窗成对）· 残余方向 "
                      + fmt(resid) + " · 合计 " + fmt(tot))
     lines.append("1h 农场（官方结算口径）：")
-    sec, cur1 = farm_section(FARM1H, ["FAIR", "BAND", "LATE"], prev)
+    sec, cur1 = farm_section(FARM1H, ["FAIR", "BAND", "LATE", "FV7"], prev)
     lines += sec
     bnc = read_jsonl("/root/polymarket-farm1h/data/fair07_binance.jsonl")
     bset = [r for r in bnc if r.get("type") == "settle"]
@@ -226,13 +226,32 @@ def build_report(update_prev=True):
     return "\n".join(lines)
 
 
-def send(text):
+def _send_one(text):
     body = json.dumps({"chat_id": CHAT, "text": text}).encode()
     req = urllib.request.Request(
         "https://api.telegram.org/bot" + TOKEN + "/sendMessage",
         data=body, headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=30) as r:
         return json.load(r).get("ok", False)
+
+
+def send(text):
+    # Telegram rejects texts over 4096 chars; split at line
+    # boundaries into <=4000-char messages (needed once the FV7
+    # family joined the report, 2026-11-23).
+    chunks, cur = [], ""
+    for line in text.split("\n"):
+        if cur and len(cur) + 1 + len(line) > 4000:
+            chunks.append(cur)
+            cur = line
+        else:
+            cur = cur + "\n" + line if cur else line
+    if cur:
+        chunks.append(cur)
+    ok = True
+    for c in chunks:
+        ok = _send_one(c) and ok
+    return ok
 
 
 def main():
